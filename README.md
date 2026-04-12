@@ -1,5 +1,10 @@
 # 🚀 Next.js Full-Stack Development Workflows
 
+[![Next.js 15](https://img.shields.io/badge/Next.js-15+-black?logo=next.js)](https://nextjs.org/)
+[![React 19](https://img.shields.io/badge/React-19-blue?logo=react)](https://react.dev/)
+[![Tailwind v4](https://img.shields.io/badge/Tailwind-v4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+
 A comprehensive, phase-gated **AI prompt library** for building production-grade Next.js applications. Each phase contains ready-to-use prompts designed for AI coding assistants (Claude Code, Cursor, GitHub Copilot) that guide you from initial idea to post-launch resilience.
 
 > **21 phases · 100+ prompts · 2025–2026 stack**
@@ -31,9 +36,75 @@ Then reference the prompts from `workflows/phases/` when working with your AI as
 
 ## 🗂️ Phases
 
+### 🗺️ Visual Workflow
+
+```mermaid
+graph TD
+    %% Core Setup
+    A[0: Planning & Setup] --> B[1: Project Structure]
+    B --> C[2: Backend Setup]
+    C --> D[3: Database Models]
+    D --> E[4: Authentication]
+    E --> F[5: Frontend Dev]
+    
+    %% Testing & Security
+    F --> G[7: Testing & QA]
+    G --> H[8: Security]
+    
+    %% Advanced Features (Branch)
+    F -.-> I[6: Advanced Features]
+    F -.-> J[9: A11y & i18n]
+    F -.-> K[17: Mobile & PWA]
+
+    %% Production Prep
+    H --> L[10: Performance]
+    L --> M[11: DevOps]
+    M --> N[12: Observability]
+    N --> O[13: CI/CD]
+    O --> P[14: Pre-Launch]
+
+    %% Add-ons (Optional Branches)
+    P -.-> Q[15: AI Integration]
+    P -.-> R[16: Subscriptions]
+    P -.-> S[18: Analytics]
+    P -.-> T[19: API Docs]
+    P -.-> U[20: Error Resilience]
+    
+    classDef phase fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff;
+    classDef branch fill:#1e293b,stroke:#a855f7,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+    
+    class A,B,C,D,E,F,G,H,L,M,N,O,P phase;
+    class I,J,K,Q,R,S,T,U branch;
+```
+
+### 🧭 Which Phase Do I Need?
+
+**Starting a new project?**
+Begin firmly at **Phase 0** and proceed sequentially through **Phase 5**. These are the critical path foundations for every Next.js application.
+
+**Need secure user logins?**
+Jump to **Phase 4 (Authentication)** to see patterns for Auth.js, Clerk, and Better Auth.
+
+**App is slow? Need better Core Web Vitals?**
+You need **Phase 10 (Performance Optimization)** for caching strategies, bundle analysis, and image optimization.
+
+**Deploying to production tomorrow?**
+Pause development and run through **Phase 14 (Pre-Launch Checklist)**, **Phase 8 (Security)**, and **Phase 12 (Observability)** immediately.
+
+**Adding new revenue streams or paid plans?**
+Head straight to **Phase 16 (Payment & Subscription)** for Stripe integration and webhooks.
+
+**Trying to add ChatGPT-like features?**
+Use **Phase 15 (AI & LLM Integration)** for Vercel AI SDK integration, RAG pipelines, and tool calling.
+
+**Want AI to design your UI before you code?**
+Use **Phase 0.8 (Google Stitch)** to generate high-fidelity screens and a `DESIGN.md` design system from natural language prompts.
+
+### Phase Directory
+
 | # | Phase | Role | Description |
 |---|---|---|---|
-| 0 | [Planning & Setup](phases/PHASE_0_PLANNING__SETUP_Product_Manager_UIUX_Designer.md) | Product Manager, UI/UX Designer | Ideation, PRD, tech design, wireframes, design system |
+| 0 | [Planning & Setup](phases/PHASE_0_PLANNING__SETUP_Product_Manager_UIUX_Designer.md) | Product Manager, UI/UX Designer | Ideation, PRD, tech design, wireframes, **Google Stitch**, design system |
 | 1 | [Project Structure & Config](phases/PHASE_1_PROJECT_STRUCTURE__CONFIGURATION_Full-Stack_Developer.md) | Full-Stack Developer | Project init, `next.config.ts`, Biome, Tailwind v4 |
 | 2 | [Backend: API Routes & Server Actions](phases/PHASE_2_BACKEND_SETUP_API_Routes__Server_Actions.md) | Full-Stack Developer | Route Handlers, Server Actions, validation |
 | 3 | [Database Models & Integration](phases/PHASE_3_DATABASE_MODELS__INTEGRATION_Database_Architect.md) | Database Architect | Schema design, Prisma/Drizzle, migrations |
@@ -72,6 +143,7 @@ Then reference the prompts from `workflows/phases/` when working with your AI as
 | **Auth** | Better Auth / Auth.js v5 / Clerk |
 | **Email** | Resend + React Email |
 | **AI** | Vercel AI SDK (OpenAI, Anthropic) |
+| **Design** | Google Stitch (`DESIGN.md`, MCP, SDK) |
 | **Payments** | Stripe |
 | **Linting** | Biome |
 | **Testing** | Vitest + Playwright |
@@ -129,6 +201,21 @@ export class AppError extends Error {
     this.name = 'AppError'
   }
 }
+```
+
+### Google Stitch — DESIGN.md (Phase 0.8)
+
+```markdown
+<!-- DESIGN.md — placed at project root -->
+# Design System
+## Colors
+- Primary: oklch(0.7 0.15 250)
+- Background: oklch(0.15 0.01 260)
+## Typography
+- Heading: "Inter", sans-serif, 700
+- Body: "Inter", sans-serif, 400
+## Spacing
+- Base: 4px, Scale: 4/8/12/16/24/32/48/64
 ```
 
 ---

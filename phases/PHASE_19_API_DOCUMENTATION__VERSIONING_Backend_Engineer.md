@@ -1,542 +1,80 @@
-<a name="phase-19"></a>📌 PHASE 19: API DOCUMENTATION & VERSIONING (Backend Engineer)
+<a name="phase-19"></a>
+# 📌 PHASE 19: API DOCUMENTATION & VERSIONING (Backend Engineer)
 
-> **Next.js Version:** This phase uses Next.js (latest stable). See Phase 0, Prompt 0.7 for the version compatibility table.
+> **Next.js Version:** See [Phase 0.7](./PHASE_0_PLANNING__SETUP_Product_Manager_UIUX_Designer.md#prompt-07) for the version compatibility table.
+
+---
 
 ### Prompt 19.1: OpenAPI Specification & Documentation UI
 
-You are a Backend Engineer. Set up API documentation with OpenAPI specification and a modern documentation UI.
+```text
+You are an API Documentation Engineer. Set up a modern API Reference UI for the backend.
 
-Tool: **Scalar** (Modern API documentation UI, successor to Swagger UI)
-Spec: **OpenAPI 3.1** (Latest standard)
-Types: **openapi-typescript** (Generate TypeScript types from spec)
+Tool: **Scalar** (Modern successor to Swagger UI)
+Spec: **OpenAPI 3.1**
 
-```bash
-pnpm add @scalar/nextjs-api-reference
-pnpm add -D openapi-typescript
+Constraints:
+- You must serve the OpenAPI JSON spec via a standard Next.js GET Route Handler (`/api/docs`).
+- You must set up Scalar UI via `@scalar/nextjs-api-reference` to consume that spec.
+- The spec must include clear response schemas, authorization header definitions, and error (400, 401, 500) payloads.
+
+Required Output Format: Provide complete code for:
+1. `lib/openapi.ts`: Generating or exporting the OpenAPI 3.1 Document object.
+2. `app/api/docs/route.ts`: Exporting the raw JSON spec.
+3. `app/api/docs/ui/route.ts`: Configuring the Scalar UI endpoint.
 ```
 
-```typescript
-// lib/openapi.ts — OpenAPI specification
-import type { OpenAPIV3_1 } from 'openapi-types'
-
-export const openApiSpec: OpenAPIV3_1.Document = {
-  openapi: '3.1.0',
-  info: {
-    title: 'My App API',
-    version: '1.0.0',
-    description: 'API documentation for My App',
-    contact: {
-      name: 'API Support',
-      email: 'api@myapp.com',
-    },
-  },
-  servers: [
-    { url: 'https://myapp.com', description: 'Production' },
-    { url: 'http://localhost:3000', description: 'Development' },
-  ],
-  components: {
-    securitySchemes: {
-      bearerAuth: {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-      },
-      cookieAuth: {
-        type: 'apiKey',
-        in: 'cookie',
-        name: 'session_token',
-      },
-    },
-    schemas: {
-      Error: {
-        type: 'object',
-        properties: {
-          error: { type: 'string' },
-          message: { type: 'string' },
-          statusCode: { type: 'integer' },
-        },
-        required: ['error', 'message', 'statusCode'],
-      },
-      Pagination: {
-        type: 'object',
-        properties: {
-          page: { type: 'integer', minimum: 1 },
-          limit: { type: 'integer', minimum: 1, maximum: 100 },
-          total: { type: 'integer' },
-          totalPages: { type: 'integer' },
-        },
-      },
-      User: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-          email: { type: 'string', format: 'email' },
-          name: { type: 'string' },
-          role: { type: 'string', enum: ['user', 'admin'] },
-          createdAt: { type: 'string', format: 'date-time' },
-        },
-        required: ['id', 'email', 'name', 'role'],
-      },
-    },
-  },
-  paths: {
-    '/api/v1/users': {
-      get: {
-        operationId: 'listUsers',
-        summary: 'List users',
-        tags: ['Users'],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
-          { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
-          { name: 'search', in: 'query', schema: { type: 'string' } },
-        ],
-        responses: {
-          '200': {
-            description: 'Paginated list of users',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    data: { type: 'array', items: { $ref: '#/components/schemas/User' } },
-                    pagination: { $ref: '#/components/schemas/Pagination' },
-                  },
-                },
-              },
-            },
-          },
-          '401': {
-            description: 'Unauthorized',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/Error' },
-              },
-            },
-          },
-        },
-      },
-    },
-    // Add more paths as you build endpoints...
-  },
-}
-```
-
-```typescript
-// app/api/docs/route.ts — Serve OpenAPI spec as JSON
-import { openApiSpec } from '@/lib/openapi'
-
-export function GET() {
-  return Response.json(openApiSpec)
-}
-```
-
-```tsx
-// app/api/docs/ui/route.ts — Scalar documentation UI
-import { ApiReference } from '@scalar/nextjs-api-reference'
-
-const config = {
-  spec: {
-    url: '/api/docs',
-  },
-  theme: 'kepler', // or 'default', 'moon', 'purple', 'solarized'
-  layout: 'modern',
-  darkMode: true,
-  hideModels: false,
-  metaData: {
-    title: 'My App — API Reference',
-  },
-}
-
-export const GET = ApiReference(config)
-```
-
-```typescript
-// Generate TypeScript types from spec
-// package.json scripts:
-// "generate:api-types": "openapi-typescript ./lib/openapi.ts -o ./types/api.d.ts"
-```
-
-```bash
-# Generate types (run after updating spec)
-pnpm openapi-typescript http://localhost:3000/api/docs -o types/api.d.ts
-```
+✅ **Verification Checklist:**
+- [ ] Navigate to `/api/docs/ui` locally. Verify the UI renders without crashing and your endpoints are visible.
 
 ---
 
 ### Prompt 19.2: API Versioning Strategy
 
-Implement API versioning to support backward-compatible changes and smooth migrations.
+```text
+You are a Backend Systems Architect. Implement a robust API versioning strategy preventing breaking changes.
 
-**Option A: URL Prefix** (Recommended — most explicit)
-**Option B: Header-based** (Cleaner URLs, more complex routing)
+Strategy: **URL Prefixing (`/api/v1/...`)**
 
-#### Option A: URL Prefix Versioning
+Constraints:
+- Outline how to handle a theoretical breaking change (e.g., migrating from offset-based pagination to cursor-based pagination).
+- You MUST utilize HTTP headers (`Warning`, `Deprecation`, `Sunset`) when an older version is nearing End-of-Life.
 
-```
-/api/v1/users     → Version 1 (current stable)
-/api/v2/users     → Version 2 (new features)
-```
+Required Output Format: Provide a code sample of:
+1. Directory structure separating `/v1/` and `/v2/` routes.
+2. A utility function `withDeprecationHeaders(response, sunsetDate)` to wrap outgoing responses from deprecated endpoints.
+3. A written "API Deprecation Policy" document detailing the timeline from Announcement -> Deprecation -> Sunset.
 
-```
-app/
-  api/
-    v1/
-      users/
-        route.ts          # GET /api/v1/users
-      users/[id]/
-        route.ts          # GET/PATCH/DELETE /api/v1/users/:id
-    v2/
-      users/
-        route.ts          # GET /api/v2/users (new response format)
+⚠️ Common Pitfalls:
+- **Pitfall:** Using Header-based versioning (`Accept: application/vnd.company.v2+json`) in Next.js, which complicates CDNs, Caching, and debugging significantly.
+- **Solution:** Stick strictly to URL-based versioning (`/api/v1/resource`) for absolute clarity.
 ```
 
-```typescript
-// app/api/v1/users/route.ts
-import { NextRequest } from 'next/server'
-import { listUsers } from '@/lib/services/users'
-
-export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl
-  const page = Number(searchParams.get('page') || '1')
-  const limit = Number(searchParams.get('limit') || '20')
-
-  const result = await listUsers({ page, limit })
-
-  return Response.json({
-    data: result.users,
-    pagination: {
-      page,
-      limit,
-      total: result.total,
-      totalPages: Math.ceil(result.total / limit),
-    },
-  })
-}
-```
-
-```typescript
-// app/api/v2/users/route.ts — V2 with different response shape
-import { NextRequest } from 'next/server'
-import { listUsers } from '@/lib/services/users'
-
-export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl
-  const cursor = searchParams.get('cursor')
-  const limit = Number(searchParams.get('limit') || '20')
-
-  // V2 uses cursor-based pagination instead of offset
-  const result = await listUsers({ cursor, limit })
-
-  return Response.json({
-    data: result.users,
-    meta: {
-      nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
-    },
-  })
-}
-```
-
-```typescript
-// lib/api-versioning.ts — Shared version utilities
-export const API_VERSIONS = {
-  v1: { status: 'stable', sunset: null },
-  v2: { status: 'beta', sunset: null },
-} as const
-
-export type ApiVersion = keyof typeof API_VERSIONS
-
-// Deprecation headers for sunset versions
-export function withDeprecationHeaders(response: Response, version: ApiVersion): Response {
-  const versionInfo = API_VERSIONS[version]
-
-  if (versionInfo.sunset) {
-    response.headers.set('Sunset', new Date(versionInfo.sunset).toUTCString())
-    response.headers.set('Deprecation', 'true')
-    response.headers.set(
-      'Link',
-      `</api/v2>; rel="successor-version"`
-    )
-  }
-
-  response.headers.set('X-API-Version', version)
-  return response
-}
-```
-
-#### Option B: Header-based Versioning
-
-```typescript
-// middleware.ts — Route to correct version based on Accept header
-import { NextRequest, NextResponse } from 'next/server'
-
-export function middleware(request: NextRequest) {
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    const accept = request.headers.get('accept') || ''
-    const versionMatch = accept.match(/application\/vnd\.myapp\.v(\d+)\+json/)
-    const version = versionMatch ? `v${versionMatch[1]}` : 'v1'
-
-    // Rewrite to versioned path internally
-    const url = request.nextUrl.clone()
-    url.pathname = `/api/${version}${request.nextUrl.pathname.replace('/api', '')}`
-    return NextResponse.rewrite(url)
-  }
-}
-```
+✅ **Verification Checklist:**
+- [ ] Hit a theoretical `/api/v1/` endpoint that is deprecated. Verify the response headers contain a `Sunset` date.
 
 ---
 
-### Prompt 19.3: Type-safe API Client (SDK Generation)
+### Prompt 19.3: Type-safe SDK Client Generation
 
-Generate a type-safe API client from your OpenAPI spec using `openapi-fetch`.
+```text
+You are an SDK Developer. Given an OpenAPI spec, generate a fully type-safe fetch client for frontend consumption.
 
-```bash
-pnpm add openapi-fetch
-pnpm add -D openapi-typescript
+Tools: `openapi-typescript` and `openapi-fetch`.
+
+Constraints:
+- Do not manually edit the generated TypeScript file. Define it as an NPM script.
+- The `openapi-fetch` client must gracefully handle injecting the Authentication token (Bearer).
+
+Required Output Format: Provide:
+1. The `package.json` scripts needed to execute the AST generation (`openapi-typescript ...`).
+2. `lib/api-client.ts` initializing `createClient<paths>({ ... })` from `openapi-fetch`.
 ```
 
-```typescript
-// types/api.d.ts — Auto-generated (do not edit manually)
-// Run: pnpm openapi-typescript http://localhost:3000/api/docs -o types/api.d.ts
-
-// Example generated output:
-export interface paths {
-  '/api/v1/users': {
-    get: {
-      parameters: {
-        query?: {
-          page?: number
-          limit?: number
-          search?: string
-        }
-      }
-      responses: {
-        200: {
-          content: {
-            'application/json': {
-              data: components['schemas']['User'][]
-              pagination: components['schemas']['Pagination']
-            }
-          }
-        }
-        401: {
-          content: {
-            'application/json': components['schemas']['Error']
-          }
-        }
-      }
-    }
-  }
-}
-
-export interface components {
-  schemas: {
-    User: {
-      id: string
-      email: string
-      name: string
-      role: 'user' | 'admin'
-      createdAt?: string
-    }
-    Pagination: {
-      page: number
-      limit: number
-      total: number
-      totalPages: number
-    }
-    Error: {
-      error: string
-      message: string
-      statusCode: number
-    }
-  }
-}
-```
-
-```typescript
-// lib/api-client.ts — Type-safe client
-import createClient from 'openapi-fetch'
-import type { paths } from '@/types/api'
-
-export const api = createClient<paths>({
-  baseUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
-
-// Usage:
-// const { data, error } = await api.GET('/api/v1/users', {
-//   params: { query: { page: 1, limit: 20 } },
-// })
-// data is fully typed: { data: User[], pagination: Pagination }
-```
-
-```typescript
-// lib/api-client-auth.ts — Client with auth token injection
-import createClient from 'openapi-fetch'
-import type { paths } from '@/types/api'
-
-export function createAuthenticatedClient(token: string) {
-  return createClient<paths>({
-    baseUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-  })
-}
-```
-
-```json
-// package.json — Add generation scripts
-{
-  "scripts": {
-    "generate:api-types": "openapi-typescript http://localhost:3000/api/docs -o types/api.d.ts",
-    "generate:api-types:ci": "openapi-typescript ./lib/openapi.ts -o types/api.d.ts"
-  }
-}
-```
+✅ **Verification Checklist:**
+- [ ] Run the generation script. Verify `types/api.d.ts` is created and contains the accurate schemas mapped from your `openapi.ts`.
 
 ---
-
-### Prompt 19.4: API Changelog & Deprecation Workflow
-
-Maintain a changelog for API changes and manage version deprecation gracefully.
-
-#### Changelog Format
-
-```markdown
-<!-- CHANGELOG-API.md -->
-# API Changelog
-
-All notable changes to the API are documented here.
-Format based on [Keep a Changelog](https://keepachangelog.com/).
-
-## [v2] — 2025-06-01
-
-### Added
-- Cursor-based pagination on `/api/v2/users` (replaces offset pagination)
-- `GET /api/v2/users/:id/activity` — User activity timeline
-
-### Changed
-- Response envelope changed: `pagination` → `meta` with cursor fields
-
-### Migration Guide
-See [V1 to V2 Migration Guide](./docs/api-migration-v1-v2.md)
-
-## [v1] — 2025-01-15
-
-### Added
-- Initial API release
-- `GET /api/v1/users` — List users with offset pagination
-- `GET /api/v1/users/:id` — Get user by ID
-- `PATCH /api/v1/users/:id` — Update user
-```
-
-#### Deprecation Timeline Template
-
-```markdown
-<!-- docs/api-deprecation-policy.md -->
-# API Deprecation Policy
-
-## Timeline
-1. **Announcement** (Day 0): Add `Deprecation` header + changelog entry
-2. **Migration period** (6 months): Both versions available, docs link to migration guide
-3. **Warning phase** (Month 5): Return `Warning` header with sunset date
-4. **Sunset** (Month 6): Return 410 Gone with migration instructions
-
-## Communication
-- Email all API consumers with deprecation notice
-- Add banner to API documentation UI
-- Log usage of deprecated endpoints for targeted outreach
-```
-
-#### Breaking Change Detection in CI
-
-```yaml
-# .github/workflows/api-compat.yml
-name: API Compatibility Check
-
-on:
-  pull_request:
-    paths:
-      - 'lib/openapi.ts'
-      - 'app/api/**'
-
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check for breaking changes
-        run: |
-          # Export current spec
-          git stash
-          node -e "
-            const { openApiSpec } = require('./lib/openapi');
-            require('fs').writeFileSync('/tmp/spec-base.json', JSON.stringify(openApiSpec));
-          "
-          git stash pop
-
-          # Export PR spec
-          node -e "
-            const { openApiSpec } = require('./lib/openapi');
-            require('fs').writeFileSync('/tmp/spec-pr.json', JSON.stringify(openApiSpec));
-          "
-
-          # Compare (using oasdiff or similar tool)
-          npx oasdiff breaking /tmp/spec-base.json /tmp/spec-pr.json
-
-      - name: Comment on PR if breaking changes found
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '⚠️ **Breaking API changes detected.** Please update the API version and add a migration guide.'
-            })
-```
-
-#### Migration Guide Template
-
-```markdown
-<!-- docs/api-migration-v1-v2.md -->
-# Migrating from API v1 to v2
-
-## Breaking Changes
-
-### 1. Pagination
-**Before (v1):** Offset-based
-```json
-GET /api/v1/users?page=2&limit=20
-
-{ "data": [...], "pagination": { "page": 2, "limit": 20, "total": 100 } }
-```
-
-**After (v2):** Cursor-based
-```json
-GET /api/v2/users?cursor=abc123&limit=20
-
-{ "data": [...], "meta": { "nextCursor": "def456", "hasMore": true } }
-```
-
-### 2. Response Envelope
-- `pagination` → `meta`
-- `totalPages` removed (not applicable with cursors)
-
-## Step-by-step Migration
-1. Update API client base URL from `/api/v1` to `/api/v2`
-2. Replace `page` parameter with `cursor`
-3. Update pagination UI to use "Load More" instead of page numbers
-4. Test all API calls end-to-end
-```
-
-Implement comprehensive API documentation with Scalar UI, type-safe client generation, versioning strategy, and a deprecation workflow for long-term API maintenance.
+📎 **Related Phases:**
+- Prerequisites: [Phase 2: Backend Setup](./PHASE_2_BACKEND_SETUP_API_Routes__Server_Actions.md)
+- Proceeds to: [Phase 20: Error Handling & Resilience](./PHASE_20_ERROR_HANDLING__RESILIENCE_Full-Stack_Engineer.md)

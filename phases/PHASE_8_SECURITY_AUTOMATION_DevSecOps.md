@@ -1,9 +1,7 @@
 <a name="phase-8"></a>
-# 📌 PHASE 8: SECURITY AUTOMATION (DevSecOps)
+# 📌 PHASE 8: SECURITY & AUTOMATION (DevSecOps)
 
 > **Next.js Version:** See [Phase 0.7](./PHASE_0_PLANNING__SETUP_Product_Manager_UIUX_Designer.md#prompt-07) for the version compatibility table.
->
-> **Note:** This phase is the single source of truth for CSP headers and security middleware. Phase 4 handles auth-specific middleware only.
 
 ---
 
@@ -14,376 +12,77 @@ You are a DevSecOps Engineer. Implement automated security scanning in the CI/CD
 
 Tools:
 - **Dependency Scanning**: npm audit, Dependabot, Renovate, Socket.dev
-- **SAST (Static Application Security Testing)**: CodeQL, Snyk
-- **Secret Scanning**: TruffleHog, GitGuardian
-- **Container Scanning**: Trivy
-- **Supply Chain**: npm provenance verification
+- **SAST (Static Application Security Testing)**: CodeQL
+- **Secret Scanning**: TruffleHog
 
-Required:
-1. GitHub Action workflow for security checks
-2. CodeQL initialization and analysis
-3. Secret scanning pre-commit hook
-4. Dependency vulnerability check (npm audit + Socket.dev)
-5. Container vulnerability scanning
-6. Report generation and blocking of critical vulnerabilities
+Constraints:
+- Security workflows must block PR merges if critical vulnerabilities are found.
+- Differentiate between devDependency vulnerabilities (warn) and production dependency vulnerabilities (block).
+- Ensure secret scanning runs before codebase pushes (via pre-commit hooks).
+
+Required Output Format: Provide complete code for:
+1. `.github/workflows/security.yml`: Action workflow scheduling CodeQL, npm audit, and TruffleHog.
+2. `.husky/pre-commit`: Local pre-commit hook to block developers from accidentally committing AWS keys or database secrets.
+3. Guidelines on handling false positives in CodeQL.
 ```
 
-```yaml
-# .github/workflows/security.yml
-name: Security Scan
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  schedule:
-    - cron: '30 1 * * 0' # Weekly scan
-
-permissions:
-  contents: read
-  security-events: write
-
-jobs:
-  dependency-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run npm audit
-        run: npm audit --audit-level=high
-        continue-on-error: true
-
-      - name: Run Socket.dev Security Check
-        uses: SocketDev/socket-security-action@v1
-        if: github.event_name == 'pull_request'
-
-  codeql:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript
-          queries: security-extended
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-
-  secret-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Run TruffleHog Secret Scan
-        uses: trufflesecurity/trufflehog@main
-        with:
-          extra_args: --results=verified,unknown
-
-  snyk:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-
-  container-scan:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Docker image
-        run: docker build -t app:${{ github.sha }} .
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'app:${{ github.sha }}'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-results.sarif'
-```
-
-#### Pre-commit Hook Setup (Husky + TruffleHog):
-
-```bash
-# Setup commands
-npm install -D husky
-npx husky init
-```
-
-```bash
-# .husky/pre-commit
-npx biome check --staged
-npx trufflehog filesystem --directory=. --only-verified --fail
-```
+✅ **Verification Checklist:**
+- [ ] Push a dummy `.env` file with a fake Stripe secret to an isolated branch; ensure the pre-commit hook catches it and aborts the commit.
+- [ ] Review GitHub Actions Security tab; verify CodeQL ran successfully across the Next.js directories.
 
 ---
 
-### Prompt 8.2: Content Security Policy & Security Headers (Consolidated)
+### Prompt 8.2: Content Security Policy & Security Headers
 
 ```text
-Implement strict Content Security Policy (CSP) and all security headers using Next.js Middleware.
+You are an Application Security Engineer. Add defense-in-depth via HTTP headers.
 
-This is the SINGLE location for security headers — do not duplicate in Phase 4.
+Constraints:
+- This logic MUST live in the Next.js `middleware.ts`.
+- Content-Security-Policy (CSP) must utilize nonces to explicitly allow specific inline scripts (like Next.js's native hydration scripts).
+- Keep `frame-ancestors` restricted to prevent Clickjacking.
 
-Required:
-1. Generate nonce for every request
-2. Set CSP headers with strict-dynamic for scripts
-3. Configure all security headers (HSTS, X-Frame-Options, etc.)
-4. Handle external scripts (Analytics, Stripe, Sentry, PostHog)
-5. CORS configuration for API routes
-6. SRI (Subresource Integrity) guidance for external scripts
+Required Output Format: Provide complete code for:
+1. CSP Nonce Generation logic inside middleware.
+2. The CSP header string compiling `script-src`, `connect-src`, `img-src` specifically tuned for a standard Next.js app (Vercel, Stripe, Analytics).
+3. The Root Layout update: Injecting the nonce into the DOM for third-party `<Script>` components.
+4. Explanations for HSTS, X-Content-Type-Options, and Referrer-Policy configurations.
+
+⚠️ Common Pitfalls:
+- **Pitfall:** Applying the CSP middleware to public assets recursively (`_next/image`), causing images/fonts to break and increasing middleware latency.
+- **Solution:** Use the `matcher` in middleware to meticulously exclude `/api`, `_next/static`, and `favicon.ico`.
 ```
 
-```typescript
-// middleware.ts — Unified security + auth middleware
-import { NextResponse, type NextRequest } from 'next/server'
-
-// --------------- Security Headers ---------------
-
-function addSecurityHeaders(request: NextRequest, response: NextResponse): NextResponse {
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
-
-  // CSP Directives — add domains for your external services
-  const cspHeader = `
-    default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://js.stripe.com;
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' blob: data: https:;
-    font-src 'self';
-    connect-src 'self' https://api.stripe.com https://*.sentry.io https://*.posthog.com https://*.ingest.us.sentry.io;
-    frame-src 'self' https://js.stripe.com https://hooks.stripe.com;
-    frame-ancestors 'none';
-    form-action 'self';
-    base-uri 'self';
-    object-src 'none';
-    upgrade-insecure-requests;
-  `.replace(/\s{2,}/g, ' ').trim()
-
-  // Set nonce for downstream use (layout.tsx reads this)
-  response.headers.set('x-nonce', nonce)
-
-  // Security headers
-  response.headers.set('Content-Security-Policy', cspHeader)
-  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('X-XSS-Protection', '0') // Disabled in favor of CSP
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-  // Remove server identification headers
-  response.headers.delete('X-Powered-By')
-
-  return response
-}
-
-// --------------- CORS for API Routes ---------------
-
-const ALLOWED_ORIGINS = [
-  process.env.NEXT_PUBLIC_APP_URL,
-  // Add other allowed origins
-].filter(Boolean) as string[]
-
-function handleCors(request: NextRequest, response: NextResponse): NextResponse {
-  const origin = request.headers.get('origin')
-
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
-    response.headers.set('Access-Control-Allow-Origin', origin)
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    response.headers.set('Access-Control-Allow-Credentials', 'true')
-    response.headers.set('Access-Control-Max-Age', '86400')
-  }
-
-  return response
-}
-
-// --------------- Auth Protection ---------------
-
-const protectedRoutes = ['/dashboard', '/settings', '/admin']
-const authRoutes = ['/login', '/register']
-
-function handleAuth(request: NextRequest): NextResponse | null {
-  const { pathname } = request.nextUrl
-  const sessionToken = request.cookies.get('session_token')?.value
-
-  if (protectedRoutes.some(route => pathname.startsWith(route)) && !sessionToken) {
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('callbackUrl', pathname)
-    return NextResponse.redirect(loginUrl)
-  }
-
-  if (authRoutes.some(route => pathname.startsWith(route)) && sessionToken) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  return null // Continue to next middleware
-}
-
-// --------------- Main Middleware ---------------
-
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-
-  // Handle CORS preflight for API routes
-  if (pathname.startsWith('/api') && request.method === 'OPTIONS') {
-    const response = new NextResponse(null, { status: 204 })
-    return handleCors(request, response)
-  }
-
-  // Auth redirects
-  const authResponse = handleAuth(request)
-  if (authResponse) return addSecurityHeaders(request, authResponse)
-
-  // Default: add security headers + CORS
-  const response = NextResponse.next()
-  addSecurityHeaders(request, response)
-  if (pathname.startsWith('/api')) handleCors(request, response)
-
-  return response
-}
-
-export const config = {
-  matcher: [
-    {
-      source: '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-      ],
-    },
-  ],
-}
-```
-
-```tsx
-// app/layout.tsx — Reading the nonce for inline scripts
-import { headers } from 'next/headers'
-
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const nonce = (await headers()).get('x-nonce') ?? ''
-
-  return (
-    <html lang="en">
-      <body>
-        {children}
-        {/* Every inline <script> must carry the nonce — browsers block the rest */}
-        <script
-          nonce={nonce}
-          dangerouslySetInnerHTML={{ __html: 'console.log("secure")' }}
-        />
-        {/* Pass nonce to third-party script components (Sentry, PostHog, etc.)
-            e.g. <Script nonce={nonce} src="..." strategy="afterInteractive" /> */}
-      </body>
-    </html>
-  )
-}
-```
-
-#### SRI (Subresource Integrity) for External Scripts:
-
-```text
-When loading scripts from CDNs, use SRI to verify integrity:
-
-<script
-  src="https://cdn.example.com/lib.js"
-  integrity="sha384-abc123..."
-  crossOrigin="anonymous"
-  nonce={nonce}
-/>
-
-Generate SRI hashes with: `openssl dgst -sha384 -binary < file.js | openssl base64 -A`
-Or use: https://www.srihash.org/
-
-For Next.js: prefer npm packages over CDN scripts when possible (bundled = no SRI needed).
-```
+✅ **Verification Checklist:**
+- [ ] View page source in the browser; verify `<script nonce="...">` exists and the nonce changes on every page refresh.
+- [ ] Ensure external fonts (like Google Fonts) load successfully without being blocked by CSP errors in the console.
 
 ---
 
 ### Prompt 8.3: Penetration Testing Checklist
 
 ```text
-Create a checklist for manual and automated penetration testing.
+You are an Offensive Security Consultant (Red Teamer). Provide a detailed Penetration Testing Checklist specifically tailored for modern Next.js/React applications.
 
-1. **Authentication**:
-   - [ ] Test for brute force attacks (rate limiting verified?)
-   - [ ] Test for session fixation
-   - [ ] Test password reset token expiration (tokens expire after use & time)
-   - [ ] Verify 2FA bypass attempts
-   - [ ] Test passkey registration/authentication edge cases
-   - [ ] Verify account lockout after failed attempts
+Constraints:
+- Focus heavily on Server Actions (as they represent hidden API endpoints).
+- Cover Next.js specific hydration vulnerabilities.
 
-2. **Authorization (IDOR)**:
-   - [ ] Test accessing other users' data by changing IDs in URL
-   - [ ] Test accessing admin routes with user role
-   - [ ] Test vertical & horizontal privilege escalation
-   - [ ] Test Server Action authorization (call directly without UI)
+Required Output Format: Create a checklist highlighting:
+1. **Server Actions Abuse**: (e.g., testing if an attacker can manually craft a multipart form payload invoking an Admin action).
+2. **Authentication/Session**: (Token fixation, bypass).
+3. **Data Leaks**: (Checking `__NEXT_DATA__` or React 19 RSC payloads for accidentally serialized passwords or PII).
+4. **CSRF / XSS**: (Verifying React's auto-escaping is not bypassed via `dangerouslySetInnerHTML`).
 
-3. **Input Validation**:
-   - [ ] Test SQL Injection on all search inputs (should fail with ORM)
-   - [ ] Test XSS payloads in comments/profile fields
-   - [ ] Test file upload vulnerability (malicious file types, oversized files)
-   - [ ] Test prototype pollution in JSON inputs
-
-4. **API Security**:
-   - [ ] Test broken object level authorization (BOLA)
-   - [ ] Test excessive data exposure (are sensitive fields stripped?)
-   - [ ] Test mass assignment (can users set their own role?)
-   - [ ] Verify rate limiting on all public endpoints
-
-5. **Configuration**:
-   - [ ] Verify no sensitive headers (Server, X-Powered-By removed)
-   - [ ] Verify SSL/TLS configuration (strong ciphers only, HSTS)
-   - [ ] Verify Content-Security-Policy header present and strict
-   - [ ] Verify Strict-Transport-Security header with preload
-   - [ ] Check .env files are not accessible via URL
-
-6. **Business Logic**:
-   - [ ] Test bypassing payment steps
-   - [ ] Test cart manipulation (negative quantities, price tampering)
-   - [ ] Test race conditions in concurrent operations
-
-7. **Privacy & Compliance**:
-   - [ ] Verify account deletion fully removes PII
-   - [ ] Test data export functionality (GDPR data portability)
-   - [ ] Verify cookie consent is enforced before tracking
-
-Tools to use:
-- **OWASP ZAP** (Automated scanning)
-- **Burp Suite** (Manual testing)
-- **Nmap** (Port scanning)
-- **sqlmap** (SQL injection testing)
-- **nuclei** (Vulnerability scanner with templates)
+⚠️ Common Pitfalls:
+- **Pitfall:** Assuming Server Actions are safe just because there is no UI linking to them.
+- **Solution:** Remind the team that Server Actions generate public HTTP endpoints. They must be individually penetration tested like standard REST APIs.
 ```
 
-```text
-Implement automated security workflows and comprehensive manual audit procedures.
-```
+✅ **Verification Checklist:**
+- [ ] Inspect the network payload of a Server Component returning user data; ensure password hashes and internal IDs are strictly stripped.
+
+---
+📎 **Related Phases:**
+- Prerequisites: [Phase 7: Testing & QA](./PHASE_7_TESTING_QA__Testing_Engineer.md)
+- Proceeds to: [Phase 9: Accessibility & i18n](./PHASE_9_ACCESSIBILITY__INTERNATIONALIZATION_UIUX_Designer_Frontend_Developer.md)

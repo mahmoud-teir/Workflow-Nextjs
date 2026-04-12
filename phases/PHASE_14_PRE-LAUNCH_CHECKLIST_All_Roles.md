@@ -1,345 +1,297 @@
-<a name="phase-14"></a>📌 PHASE 14: PRE-LAUNCH CHECKLIST (All Roles)
+<a name="phase-14"></a>
+# 📌 PHASE 14: PRE-LAUNCH CHECKLIST (All Roles)
 
-> **Next.js Version:** This phase uses Next.js (latest stable). See Phase 0, Prompt 0.7 for the version compatibility table.
-
-### Prompt 14.1: Comprehensive Pre-launch Checklist
-You are a Product Manager. Create a comprehensive pre-launch checklist covering all aspects of the Next.js application.
-
-> **Priority Levels:** P0 = Must fix before launch (blocker), P1 = Should fix before launch, P2 = Nice to have / can follow up
-
-Checklist Categories:
-
-1. **Security Audit**:
-   - [ ] **P0** — Penetration testing completed (automated scan + manual review)
-   - [ ] **P0** — Security headers confirmed (HSTS, CSP strict — see Phase 8)
-   - [ ] **P0** — SSL/TLS grade A+ verified (ssllabs.com)
-   - [ ] **P0** — All Server Actions verify authentication and authorization
-   - [ ] **P0** — Input validation (Zod) on ALL forms, Server Actions, and API routes
-   - [ ] **P0** — No secrets in client bundles (grep `NEXT_PUBLIC_` env vars)
-   - [ ] **P1** — Dependency vulnerability scan clean (`pnpm audit` / Socket.dev)
-   - [ ] **P1** — API rate limiting verified (Upstash / custom middleware)
-   - [ ] **P1** — Authentication flows tested (login, signup, password reset, MFA)
-   - [ ] **P1** — CSRF protection on all mutation endpoints
-   - [ ] **P1** — API key rotation procedure documented
-   - [ ] **P2** — Pre-commit secret scanning enabled (TruffleHog / Husky)
-
-2. **Performance**:
-   - [ ] **P0** — Core Web Vitals passing (LCP < 2.5s, INP < 200ms, CLS < 0.1)
-   - [ ] **P0** — Lighthouse scores > 90 (Performance, Accessibility, SEO, Best Practices)
-   - [ ] **P1** — Bundle size check (initial JS < 200KB gzipped)
-   - [ ] **P1** — Image optimization verified (AVIF/WebP via `next/image`)
-   - [ ] **P1** — Font optimization verified (`next/font` with `display: swap`)
-   - [ ] **P1** — Database query performance audited (indexes, no N+1 queries)
-   - [ ] **P1** — Caching headers verified (stale-while-revalidate, ISR configured)
-   - [ ] **P1** — React Compiler compatibility verified (no manual `useMemo`/`useCallback` needed)
-   - [ ] **P2** — PPR (Partial Prerendering) enabled for eligible routes
-   - [ ] **P2** — Streaming/Suspense boundaries verified (no unnecessary waterfalls)
-   - [ ] **P2** — Third-party scripts loaded via Partytown or `afterInteractive`
-
-3. **Functionality**:
-   - [ ] **P0** — All user stories accepted and tested
-   - [ ] **P0** — Error pages customized (`not-found.tsx`, `error.tsx`, `global-error.tsx`)
-   - [ ] **P0** — Form validation working properly (client + server)
-   - [ ] **P1** — Cross-browser testing (Chrome, Firefox, Safari, Edge)
-   - [ ] **P1** — Mobile responsiveness verified (320px–2560px viewports)
-   - [ ] **P1** — Server Action error states handled gracefully (loading, error, success)
-   - [ ] **P1** — File uploads working properly (size limits, type validation)
-   - [ ] **P1** — Search functionality working properly
-   - [ ] **P1** — Internationalization (i18n) verified (if applicable — Phase 9)
-   - [ ] **P2** — Streaming responses render progressively (Suspense fallbacks present)
-   - [ ] **P2** — Deep links / shareable URLs work correctly
-
-4. **Reliability & Operations**:
-   - [ ] **P0** — Database backups configured (point-in-time recovery)
-   - [ ] **P0** — Monitoring active (Sentry error tracking + uptime monitoring)
-   - [ ] **P0** — Rollback procedure tested (Vercel Instant Rollback or equivalent)
-   - [ ] **P1** — Structured logging active (Pino / JSON logs with correlation IDs)
-   - [ ] **P1** — Uptime monitoring configured (BetterStack / UptimeRobot)
-   - [ ] **P1** — Auto-scaling configured (Vercel / AWS / Kubernetes)
-   - [ ] **P1** — Alert routing configured (P0 → PagerDuty, P1 → Slack)
-   - [ ] **P2** — Graceful shutdown handler implemented (SIGTERM/SIGINT)
-   - [ ] **P2** — Health check endpoint responding (`/api/health`)
-
-5. **Legal & Compliance**:
-   - [ ] **P0** — Privacy Policy published and linked in footer
-   - [ ] **P0** — Terms of Service published and linked in footer
-   - [ ] **P0** — Cookie consent banner implemented (Phase 18) — required if using cookies
-   - [ ] **P1** — Data retention policy implemented and documented
-   - [ ] **P1** — Account deletion flow works (GDPR right to erasure — Phase 4)
-   - [ ] **P1** — Analytics respects user opt-out (consent-gated — Phase 18)
-   - [ ] **P2** — CCPA "Do Not Sell" link present (if applicable)
-   - [ ] **P2** — Data processing agreements with third parties reviewed
-
-6. **Business & Marketing**:
-   - [ ] **P0** — SEO meta tags optimized (Title, Description, OG Image per page)
-   - [ ] **P0** — `sitemap.xml` and `robots.txt` generated and verified
-   - [ ] **P1** — Analytics configured and consent-gated (Phase 18)
-   - [ ] **P1** — Favicon and app icons configured (all sizes)
-   - [ ] **P1** — Structured data (JSON-LD) for relevant pages
-   - [ ] **P2** — Support channels established (email, chat, docs)
-   - [ ] **P2** — Onboarding flow tested end-to-end
-
-7. **AI Safety** (if using Phase 15 — AI/LLM Integration):
-   - [ ] **P0** — Prompt injection prevention tested (user input sanitization)
-   - [ ] **P0** — Content moderation active (block harmful outputs)
-   - [ ] **P0** — AI responses include disclaimer where appropriate
-   - [ ] **P1** — Token budget enforced per request and per user
-   - [ ] **P1** — Model fallback chain working (primary → fallback → error message)
-   - [ ] **P1** — AI rate limiting active (separate from general API limits)
-   - [ ] **P2** — Privacy policy covers AI data usage and model training opt-out
-   - [ ] **P2** — AI usage costs monitored with alerts
-
-8. **Privacy & Consent**:
-   - [ ] **P0** — Cookie consent banner appears on first visit
-   - [ ] **P0** — No tracking fires before consent is granted
-   - [ ] **P0** — Users can change consent preference in settings
-   - [ ] **P1** — Session recordings respect consent (PostHog opt-out)
-   - [ ] **P1** — No PII in analytics events (emails, names, IPs stripped)
-   - [ ] **P2** — Data export functionality available (GDPR data portability)
+> **Next.js Version:** See [Phase 0.7](./PHASE_0_PLANNING__SETUP_Product_Manager_UIUX_Designer.md#prompt-07) for the version compatibility table.
+> **Source:** Based on the official [Next.js Production Checklist](https://nextjs.org/docs/app/guides/production-checklist).
 
 ---
 
-### Prompt 14.2: Debugging Guide
-Troubleshoots common Next.js issues encountered during pre-launch testing.
+### Prompt 14.1: Next.js Automatic Optimizations Audit
 
-**Issue: Hydration Mismatch**
-```
-Error: Text content does not match server-rendered HTML
-```
-- Ensure HTML structure matches (no `<div>` inside `<p>`, no `<a>` inside `<a>`)
-- Handle dynamic values with `suppressHydrationWarning` (dates, random IDs)
-- Use `useEffect` for browser-only rendering (window dimensions, localStorage)
-- Check browser extensions modifying DOM (disable extensions to test)
-- Check timezone differences — use UTC for server-rendered dates
-- React 19: Use `--experimental-https` for local dev if CSP issues cause mismatches
+```text
+You are a Principal Engineer performing a final pre-launch audit. Before checking manual optimizations, verify that the application is correctly leveraging Next.js's AUTOMATIC optimizations — features that work by default when not accidentally broken.
 
-```tsx
-// Safe pattern for browser-only content
-'use client'
-import { useEffect, useState } from 'react'
+Next.js provides these free, out-of-the-box:
+1. **Server Components** — Components render on the server by default, reducing client-side JS bundle. Confirm no accidental `'use client'` directives on pages/layouts that don't need client-side interactivity.
+2. **Code-splitting** — Each route segment is automatically code-split. Verify that heavy shared libraries aren't being imported at the root layout (which would bundle them into every route).
+3. **Prefetching** — `<Link>` components automatically prefetch routes when they enter the viewport. Confirm you are using `<Link>` (not raw `<a>`) for internal navigation.
 
-function BrowserOnly({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  if (!mounted) return null // or a skeleton
-  return <>{children}</>
-}
+Constraints:
+- Audit every file in `app/` that contains `'use client'`. For each, justify WHY it needs to be a Client Component. If it doesn't use hooks, events, or browser APIs, remove the directive.
+- Confirm no `<a href>` tags are used for internal routes (must be `<Link>`).
+
+Required Output Format:
+1. A table of all `'use client'` files with justification (Hook/Event/Browser API used).
+2. A list of any raw `<a>` tags found for internal links, with file paths.
+3. A root layout import audit showing the total JS cost of shared dependencies.
 ```
 
-**Issue: `searchParams` / `params` Type Errors (Next.js 15+)**
-```
-Type 'Promise<{ slug: string }>' is not assignable to type '{ slug: string }'
-```
-- In Next.js 15+, `params` and `searchParams` are Promises — you must `await` them
-```tsx
-// ❌ Old pattern (Next.js 14)
-export default function Page({ params }: { params: { slug: string } }) { ... }
-
-// ✅ New pattern (Next.js 15+)
-export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  // ...
-}
-```
-
-**Issue: `unstable_cache` Behavior Changes**
-- `unstable_cache` may be renamed to `cache` or replaced by `cacheLife`/`cacheTag` in future versions
-- Always check the Next.js canary release notes before upgrading
-- Consider wrapping in a utility function for easy migration:
-```typescript
-// lib/cache.ts — Wrapper for easy migration
-import { unstable_cache } from 'next/cache'
-
-export const appCache = unstable_cache
-// When API stabilizes, update only this line
-```
-
-**Issue: API Route Timeout (Vercel)**
-- Default Vercel function timeout: 10s (Hobby), 60s (Pro), 900s (Enterprise)
-- Options:
-  1. Use `after()` API to offload work after response is sent
-  2. Switch to Edge Runtime: `export const runtime = 'edge'`
-  3. Break into smaller operations
-  4. Use background jobs (BullMQ) for heavy processing
-
-**Issue: Large Bundle Size**
-- Use dynamic imports: `const Component = dynamic(() => import(...))`
-- Analyze bundle: `ANALYZE=true pnpm build` (with `@next/bundle-analyzer`)
-- Check for accidentally bundled server code (look for `fs`, `crypto` in client chunks)
-- Tree-shake barrel exports — import from specific paths, not index files:
-```typescript
-// ❌ Imports everything
-import { Button } from '@/components/ui'
-
-// ✅ Imports only Button
-import { Button } from '@/components/ui/button'
-```
-
-**Issue: `useFormStatus` Not Working**
-- `useFormStatus` must be used inside a component that is a **child** of `<form>`
-- It won't work if called in the same component that renders the `<form>`
-```tsx
-// ❌ Won't work — same component
-function MyForm() {
-  const { pending } = useFormStatus() // Always false!
-  return <form action={myAction}><button disabled={pending}>Submit</button></form>
-}
-
-// ✅ Works — child component
-function SubmitButton() {
-  const { pending } = useFormStatus()
-  return <button disabled={pending}>{pending ? 'Saving...' : 'Submit'}</button>
-}
-
-function MyForm() {
-  return <form action={myAction}><SubmitButton /></form>
-}
-```
-
-**Issue: Server Component Importing Client Code**
-```
-Error: Cannot use useState/useEffect in a Server Component
-```
-- Add `'use client'` to the component using React hooks
-- Or refactor: keep the data-fetching in a Server Component, pass data as props to a Client Component
+✅ **Verification Checklist:**
+- [ ] Every `'use client'` directive has a documented justification.
+- [ ] Zero `<a href="/...">` tags exist for internal navigation.
+- [ ] Root `layout.tsx` imports are minimal (no heavy chart/editor libraries).
 
 ---
 
-### Prompt 14.3: Automated Pre-launch Validation Script
+### Prompt 14.2: Routing, Rendering & Data Fetching Checklist
 
-A bash script to automate verifiable checklist items. Run before every production deployment.
+```text
+You are a Senior Next.js Architect. Audit routing, rendering strategy, and data fetching patterns before launch.
 
-```bash
-#!/usr/bin/env bash
-# scripts/pre-launch-check.sh
-set -euo pipefail
+Required Audit Items (from Next.js official production checklist):
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+**Routing & Rendering:**
+- [ ] Layouts are used to share UI across routes (enabling partial rendering).
+- [ ] `loading.tsx` files exist for every route segment that performs async data fetching.
+- [ ] `error.tsx` files exist at least at the root app level and for critical route groups.
+- [ ] `not-found.tsx` exists at the root level with a branded 404 page.
+- [ ] Request-time APIs (`cookies()`, `searchParams`) are wrapped in `<Suspense>` boundaries to avoid opting the entire page into synchronous dynamic rendering.
+- [ ] Evaluate Partial Prerendering (PPR) for pages mixing static shells with dynamic content.
 
-PASS=0
-WARN=0
-FAIL=0
+**Data Fetching:**
+- [ ] All data fetching occurs in Server Components (no `useEffect` → `fetch` patterns for initial page data).
+- [ ] `<Suspense>` boundaries wrap data-heavy components so the rest of the page streams immediately.
+- [ ] Parallel data fetching is used (multiple `Promise.all` or parallel `await`) to eliminate sequential network waterfalls.
+- [ ] Data caching is verified: `unstable_cache`/`cacheLife` for cross-request caching, React `cache()` for per-request deduplication.
+- [ ] Static assets (favicons, robots, logos) live in `/public`, not fetched dynamically.
 
-check() {
-  local label="$1"
-  local result="$2" # 0=pass, 1=warn, 2=fail
-  local detail="${3:-}"
+Constraints:
+- Generate the audit as a checklist with pass/fail per route group.
+- Flag any data fetching in Client Components as `⚠️ REVIEW`.
 
-  if [ "$result" -eq 0 ]; then
-    echo -e "${GREEN}✓${NC} $label"
-    ((PASS++))
-  elif [ "$result" -eq 1 ]; then
-    echo -e "${YELLOW}⚠${NC} $label — $detail"
-    ((WARN++))
-  else
-    echo -e "${RED}✗${NC} $label — $detail"
-    ((FAIL++))
-  fi
-}
-
-echo "=== Pre-launch Validation ==="
-echo ""
-
-# 1. TypeScript
-echo "--- Type Check ---"
-if pnpm tsc --noEmit 2>/dev/null; then
-  check "TypeScript compiles" 0
-else
-  check "TypeScript compiles" 2 "Fix type errors first"
-fi
-
-# 2. Lint
-echo "--- Lint ---"
-if pnpm biome check . 2>/dev/null; then
-  check "Biome lint passes" 0
-else
-  check "Biome lint passes" 2 "Run: pnpm biome check --write ."
-fi
-
-# 3. Tests
-echo "--- Tests ---"
-if pnpm vitest run 2>/dev/null; then
-  check "Unit tests pass" 0
-else
-  check "Unit tests pass" 2 "Fix failing tests"
-fi
-
-# 4. Build
-echo "--- Build ---"
-if pnpm build 2>/dev/null; then
-  check "Production build succeeds" 0
-else
-  check "Production build succeeds" 2 "Fix build errors"
-fi
-
-# 5. Bundle size
-echo "--- Bundle Size ---"
-if [ -f ".next/analyze/client.html" ]; then
-  check "Bundle analyzer available" 0
-else
-  check "Bundle analyzer available" 1 "Run: ANALYZE=true pnpm build"
-fi
-
-# 6. Security
-echo "--- Security ---"
-AUDIT_OUTPUT=$(pnpm audit 2>&1 || true)
-if echo "$AUDIT_OUTPUT" | grep -q "0 vulnerabilities"; then
-  check "No dependency vulnerabilities" 0
-else
-  HIGH=$(echo "$AUDIT_OUTPUT" | grep -c "high" || true)
-  CRITICAL=$(echo "$AUDIT_OUTPUT" | grep -c "critical" || true)
-  if [ "$CRITICAL" -gt 0 ]; then
-    check "Dependency vulnerabilities" 2 "$CRITICAL critical, $HIGH high"
-  elif [ "$HIGH" -gt 0 ]; then
-    check "Dependency vulnerabilities" 1 "$HIGH high severity"
-  else
-    check "Dependency vulnerabilities" 0
-  fi
-fi
-
-# 7. Environment variables
-echo "--- Environment ---"
-REQUIRED_VARS=(DATABASE_URL BETTER_AUTH_SECRET NEXT_PUBLIC_APP_URL)
-for var in "${REQUIRED_VARS[@]}"; do
-  if [ -n "${!var:-}" ]; then
-    check "Env: $var set" 0
-  else
-    check "Env: $var set" 2 "Missing required variable"
-  fi
-done
-
-# Summary
-echo ""
-echo "=== Results ==="
-echo -e "${GREEN}Passed: $PASS${NC} | ${YELLOW}Warnings: $WARN${NC} | ${RED}Failed: $FAIL${NC}"
-
-if [ "$FAIL" -gt 0 ]; then
-  echo -e "\n${RED}❌ Pre-launch check FAILED. Fix issues above before deploying.${NC}"
-  exit 1
-elif [ "$WARN" -gt 0 ]; then
-  echo -e "\n${YELLOW}⚠️ Pre-launch check passed with warnings. Review before deploying.${NC}"
-  exit 0
-else
-  echo -e "\n${GREEN}✅ All pre-launch checks passed!${NC}"
-  exit 0
-fi
+Required Output Format: A markdown checklist grouped by route group (e.g., `(marketing)`, `(dashboard)`, `(auth)`) with pass/fail for each item above.
 ```
 
-```bash
-# One-time setup — make script executable before first run
-chmod +x scripts/pre-launch-check.sh
+✅ **Verification Checklist:**
+- [ ] Every route group has `loading.tsx` and `error.tsx` files.
+- [ ] No `useEffect → fetch` patterns exist in page-level components for initial data.
+
+---
+
+### Prompt 14.3: UI, Accessibility & Performance Checklist
+
+```text
+You are a Web Performance and Accessibility Engineer. Audit the frontend layer against Next.js official production recommendations.
+
+Required Audit Items:
+
+**Font Optimization:**
+- [ ] All fonts use `next/font` (Google or local), eliminating external font requests and preventing FOUT/CLS.
+- [ ] No `<link rel="stylesheet" href="https://fonts.googleapis.com/...">` tags exist.
+
+**Image Optimization:**
+- [ ] All images use `<Image>` from `next/image` with `width`/`height` or `fill` props.
+- [ ] The LCP image (hero/banner) has `priority={true}` set.
+- [ ] AVIF format is enabled in `next.config.ts` → `images.formats: ['image/avif', 'image/webp']`.
+- [ ] Blur placeholder data URLs are provided for above-the-fold images to eliminate CLS.
+
+**Third-Party Scripts:**
+- [ ] All analytics/tracking scripts use `<Script>` from `next/script` with `strategy="afterInteractive"` or `strategy="worker"` (Partytown).
+- [ ] No raw `<script>` tags exist in layout files.
+
+**Accessibility:**
+- [ ] `eslint-plugin-jsx-a11y` is configured and passes with zero errors.
+- [ ] All interactive elements have visible focus indicators.
+- [ ] All images have meaningful `alt` text (or empty `alt=""` for decorative images).
+- [ ] Color contrast meets WCAG 2.2 AA minimum (4.5:1 for normal text, 3:1 for large text).
+
+Constraints:
+- Use `next build` output to verify First Load JS per route. Flag any route exceeding 100KB.
+- Run Lighthouse in incognito mode; all scores must be ≥90.
+
+Required Output Format:
+1. Font audit table (font name → loading method → pass/fail).
+2. Image audit table (component → has width/height → has priority → format).
+3. Script audit table (script name → loading strategy → blocking main thread?).
+4. Lighthouse score summary: Performance / Accessibility / Best Practices / SEO.
 ```
 
-```json
-// Add to package.json scripts
-{
-  "scripts": {
-    "prelaunch": "bash scripts/pre-launch-check.sh"
-  }
-}
+✅ **Verification Checklist:**
+- [ ] Lighthouse Performance ≥ 90 in incognito mode.
+- [ ] Lighthouse Accessibility ≥ 90.
+- [ ] Zero layout shift from font loading (CLS < 0.1).
+- [ ] LCP < 2.5s on 4G throttled connection.
+
+---
+
+### Prompt 14.4: Security & Data Safety Checklist
+
+```text
+You are a Security Engineer performing a final security review before production launch.
+
+Required Audit Items (from Next.js official production checklist):
+
+**Server Actions:**
+- [ ] Every Server Action performs its own authentication and authorization checks (never rely on middleware alone).
+- [ ] All Server Action inputs are validated with Zod schemas.
+- [ ] A Data Access Layer (DAL) centralizes all database queries — no raw SQL or ORM calls inside Server Actions directly.
+- [ ] Rate limiting is applied to mutation-heavy Server Actions (login, registration, payments).
+
+**Environment Variables:**
+- [ ] `.env`, `.env.local`, `.env.production.local` are in `.gitignore`.
+- [ ] Only variables that MUST be visible in the browser use the `NEXT_PUBLIC_` prefix. Audit for accidental exposure of secrets.
+- [ ] Required environment variables are validated at build time (see `env.ts` pattern from Phase 1).
+
+**Content Security Policy:**
+- [ ] A CSP header is set via `middleware.ts` or `next.config.ts` `headers()`.
+- [ ] The CSP blocks inline scripts unless nonce-based (`script-src 'nonce-...'`).
+
+**Data Tainting (Experimental):**
+- [ ] If `experimental.taint` is enabled, verify that sensitive server objects (user sessions, tokens) cannot accidentally serialize into Client Component props.
+
+**Headers:**
+- [ ] `X-Content-Type-Options: nosniff` is set.
+- [ ] `X-Frame-Options: DENY` (or SAMEORIGIN) is set.
+- [ ] `Referrer-Policy: strict-origin-when-cross-origin` is set.
+- [ ] `poweredByHeader: false` is configured in `next.config.ts` to suppress the `X-Powered-By: Next.js` header.
+
+Constraints:
+- Produce a PASS/FAIL report. Any FAIL on a P0 item blocks launch.
+
+Required Output Format: A prioritized security audit report (P0/P1/P2) with pass/fail status and remediation steps for each failure.
 ```
 
-Implement full checklist review with priority levels, automated validation, and modern debugging guide before production deployment.
+✅ **Verification Checklist:**
+- [ ] Run `curl -I https://staging.example.com` and verify all security headers are present.
+- [ ] Attempt to call a Server Action without authentication — it must return 401/403.
+- [ ] Search codebase for `NEXT_PUBLIC_` — confirm none contain secrets.
+
+---
+
+### Prompt 14.5: Metadata, SEO & Monitoring Checklist
+
+```text
+You are an SEO and Observability Specialist. Audit SEO readiness and monitoring setup before launch.
+
+Required Audit Items:
+
+**Metadata & SEO:**
+- [ ] Every page exports a `metadata` object or `generateMetadata()` function with descriptive `title` and `description`.
+- [ ] OpenGraph images are configured via `opengraph-image.tsx` / `twitter-image.tsx` (or static files).
+- [ ] `sitemap.ts` exists and dynamically generates all public routes.
+- [ ] `robots.ts` exists with correct `allow`/`disallow` rules.
+- [ ] Structured data (JSON-LD) is implemented for key content pages.
+- [ ] `<h1>` is used exactly once per page.
+
+**Type Safety:**
+- [ ] TypeScript strict mode is enabled (`"strict": true` in `tsconfig.json`).
+- [ ] The Next.js TypeScript plugin is configured in the editor for autocomplete on route params, metadata, etc.
+- [ ] `tsc --noEmit` passes with zero errors.
+
+**Post-Launch Monitoring:**
+- [ ] `instrumentation.ts` is configured to initialize monitoring tools on server startup.
+- [ ] OpenTelemetry is set up to export traces and metrics to an observability platform (e.g., Datadog, New Relic, Sentry).
+- [ ] `useReportWebVitals` hook is implemented to capture real-user Core Web Vitals field data.
+- [ ] Error tracking (Sentry or equivalent) is integrated with source maps uploaded for production builds.
+
+Constraints:
+- Verify SEO tags by rendering the page with `curl` or a fetch-based bot simulator.
+- Confirm `robots.txt` doesn't accidentally block critical pages.
+
+Required Output Format:
+1. SEO audit table: page route → title → description → OG image → structured data.
+2. Monitoring readiness checklist with integration status.
+3. `useReportWebVitals` implementation code for the root layout.
+```
+
+✅ **Verification Checklist:**
+- [ ] `curl https://staging.example.com` returns `<title>`, `<meta name="description">`, and OG tags in the HTML.
+- [ ] `curl https://staging.example.com/sitemap.xml` returns a valid XML sitemap.
+- [ ] `curl https://staging.example.com/robots.txt` returns expected rules.
+
+---
+
+### Prompt 14.6: Debugging Guide (Pre-Launch Hurdles)
+
+```text
+You are a Senior Next.js Troubleshooting Expert. Document the solutions for the most frequent issues encountered during final staging tests.
+
+Constraints:
+- Focus on Next.js 15/16+ specific errors (e.g., async params, React Compiler edge cases, `use cache` issues).
+- Provide copy-pasteable snippets for fixes.
+
+Required Output Format: Document solutions for:
+1. **Hydration Mismatches:** How to track them down using `suppressHydrationWarning` and safe client mounts.
+2. **`searchParams` / `params` Async Errors:** Explaining the Next.js 15 breaking change where params are now async.
+3. **`use cache` / `cacheLife` / `cacheTag` Issues:** Explaining how to manage the new caching directives (Next.js 16+).
+4. **API Route Timeouts:** Vercel limits vs Edge Runtime vs `maxDuration` config.
+5. **Server Component Importing Client Code:** Solving the "useState in Server Component" crash.
+6. **`<Form>` component progressive enhancement:** Ensuring the `next/form` `<Form>` component works with Server Actions.
+7. **View Transitions:** Handling the experimental `viewTransition` config and `startViewTransition` API safely.
+
+⚠️ Common Pitfalls:
+- **Pitfall:** Using `useFormStatus` inside the same component that renders the `<form>`, causing it to never trigger.
+- **Solution:** `useFormStatus` must ALWAYS be used inside a child component rendered *within* the `<form>` wrapper.
+```
+
+---
+
+### Prompt 14.7: Automated Pre-launch Validation Script
+
+```text
+You are a DevOps Engineer. Write a CLI bash script that developers must run before they are allowed to promote code to production.
+
+Constraints:
+- The script must run without requiring global dependencies (use `npx` or `pnpm exec`).
+- It must halt (`exit 1`) immediately if any critical check fails.
+- Include checks derived from the official Next.js production checklist.
+
+Required Output Format: Provide a `bash` script (`scripts/pre-launch-check.sh`) that sequentially executes:
+1. Type checking (`tsc --noEmit`).
+2. Linting (`biome check .`).
+3. Unit Tests (`vitest run`).
+4. Production Build (`next build`) — verify it succeeds without errors.
+5. Bundle size check (`ANALYZE=true next build` — ensure no route exceeds 100KB First Load JS).
+6. Security Audit (`npm audit --audit-level=high`).
+7. Environment variables verification (asserting all required keys from `env.ts` exist).
+8. SEO verification (assert `sitemap.xml`, `robots.txt`, and `manifest.json` are generated in `.next`).
+9. Security headers check (start the server, `curl -I localhost:3000`, verify CSP/X-Frame-Options/etc.).
+10. Lighthouse CI (optional — `npx @lhci/cli autorun` if configured).
+```
+
+✅ **Verification Checklist:**
+- [ ] Run `bash scripts/pre-launch-check.sh`.
+- [ ] Ensure it accurately catches a missing environment variable and aborts.
+- [ ] Ensure it catches a route with excessive bundle size and warns.
+
+---
+
+### Prompt 14.8: Local Production Smoke Test
+
+```text
+You are a QA Lead. Before deploying, perform a local production smoke test to catch issues that only appear in production mode.
+
+Constraints:
+- MUST test with `next build && next start` (NOT `next dev`).
+- Test on a throttled network (Chrome DevTools 4G simulation).
+
+Required Verification Steps:
+1. Run `next build` — confirm zero build errors and review the output table for unexpected dynamic routes.
+2. Run `next start` — navigate to every primary route manually.
+3. Open Chrome DevTools → Performance → Record a page load. Verify:
+   - LCP element loads within 2.5s.
+   - No long tasks (>50ms) block the main thread during initial render.
+   - INP (click a button/link) responds within 200ms.
+4. Open Chrome DevTools → Network. Verify:
+   - No external font requests (fonts should be self-hosted via `next/font`).
+   - Images are served as AVIF/WebP, not PNG/JPEG.
+   - No 404 errors for any static assets.
+5. Test error boundaries:
+   - Navigate to a non-existent route → branded `not-found.tsx` should render.
+   - Trigger a server error → `error.tsx` should render gracefully.
+6. Test auth flows:
+   - Attempt to access a protected route while logged out → redirect to login.
+   - Log in → verify session persists across hard refresh.
+
+Required Output Format: A pass/fail smoke test report with screenshots for any failures.
+```
+
+✅ **Verification Checklist:**
+- [ ] `next build` output shows zero errors.
+- [ ] `next start` renders all primary routes without JavaScript errors in the console.
+- [ ] Core Web Vitals pass on throttled 4G connection.
+
+---
+📎 **Related Phases:**
+- Prerequisites: [Phase 13: Deployment & CI/CD](./PHASE_13_DEPLOYMENT__CICD_DevOps_Engineer.md)
+- Proceeds to: [Phase 15: AI & LLM Integration](./PHASE_15_AI__LLM_INTEGRATION_AI_Engineer.md) (Optional)

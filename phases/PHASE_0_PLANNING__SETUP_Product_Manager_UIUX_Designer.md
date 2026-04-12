@@ -8,7 +8,7 @@
 ### Prompt 0.1: Generate Project Ideas
 
 ```text
-You are an expert digital product consultant. I want to build a Next.js full-stack project to add to my portfolio.
+You are an expert Digital Product Consultant and Senior Software Architect. You have a deep understanding of modern web application trends, technical feasibility, and portfolio-building strategies. I want to build a Next.js full-stack project to add to my portfolio.
 
 About me:
 - Skill Level: [beginner/intermediate/advanced]
@@ -18,143 +18,136 @@ About me:
 
 Tools I plan to use for development:
 - AI-assisted development: Claude Code, Cursor, or GitHub Copilot
-- UI prototyping: v0.dev (Vercel's AI UI generator), Figma, or Excalidraw
+- AI-powered UI design: **Google Stitch** (stitch.withgoogle.com), v0.dev
+- UI prototyping: Figma or Excalidraw
 - Project management: Linear, GitHub Projects, or Notion
 
-Required Output:
-1. Suggest 5 Next.js project ideas matching my skill level
+Constraints:
+- Avoid ideas that require complex hardware integrations or unreleased APIs.
+- Must be buildable within the stated time frame.
+- Must demonstrate full-stack capabilities (auth, database, API, frontend).
+
+Required Output Format:
+1. Suggest 5 Next.js project ideas matching my skill level, ranked by Portfolio Impact Score (1-10).
 2. For each idea, provide:
    - Description (2-3 sentences)
    - Core Features (3-5 features)
    - Difficulty Level (1-5 stars)
    - Estimated Time to Complete
-   - Why this project is good for portfolio
+   - Why this project is good for a portfolio (specific skills demonstrated)
    - Recommended rendering strategy (SSR, SSG, ISR, PPR, or hybrid)
    - AI-powered features that could be added (if applicable)
+   - Tech Stack Compatibility Matrix summary (briefly note best ORM/auth pairs for this idea)
    - Monetization potential (free tier, subscription, one-time purchase)
 
-Rank ideas from easiest to most challenging.
+Decision Guide:
+- Rank ideas placing the highest balance of "impressiveness" vs "achievability" first.
 ```
+
+✅ **Verification Checklist:**
+- [ ] You have selected one project idea to proceed with.
+- [ ] The idea fits your realistic time constraints.
+- [ ] You understand the high-level rendering strategy required.
 
 ---
 
 ### Prompt 0.2: Create Product Requirements Document (PRD)
 
 ```text
-You are a professional Product Manager at a tech company. I want to build [describe your project idea] using Next.js.
+You are a Lead Product Manager with expertise in agile methodologies and Next.js applications. I want to build [describe your project idea] using Next.js.
 
-Required: Create a comprehensive Product Requirements Document containing:
+Constraints:
+- Do not include features that are technically incompatible with standard web browsers.
+- Focus the MVP strictly on core value delivery. Post-MVP can contain nice-to-haves.
 
-## 1. Project Overview
+Required Output Format: Create a comprehensive Product Requirements Document containing:
+
+## 1. Project Overview & User Personas
+   - Briefly define 2-3 target user personas.
 ## 2. Core Objectives
 ## 3. User Stories
    - Format: "As a [role], I want to [action], so that [benefit]"
-   - Include at least 10 user stories for MVP
+   - Include exactly 10-15 critical user stories for MVP.
 ## 4. Core Features (MVP)
 ## 5. Future Features (Post-MVP)
 ## 6. Rendering Strategy Decisions:
    - Which pages use Static Generation (SSG)?
    - Which pages use Server-Side Rendering (SSR)?
-   - Which pages use Incremental Static Regeneration (ISR)?
    - Which pages use Client-Side Rendering (CSR)?
    - Which pages use Partial Prerendering (PPR)?
-   - Which pages use Edge Runtime?
-   - Which pages use Streaming SSR with Suspense?
 ## 7. AI-Powered Features (if applicable):
-   - AI-powered search or recommendations
-   - Chatbot or assistant features
-   - Content generation or summarization
-   - Image generation or processing
-   - Structured data extraction
-## 8. Constraints & Assumptions
-## 9. Success Metrics (quantifiable KPIs)
-## 10. Out of Scope
-## 11. Privacy & Compliance Requirements
-   - GDPR / CCPA considerations
-   - Cookie consent requirements
-   - Data retention policies
-   - User data export/deletion (right to erasure)
-
-Use clear Markdown formatting with proper headings and bullet points.
+## 8. Data Flow Diagrams Requirement (Conceptual)
+   - Describe verbally how data moves from user input -> API -> Database -> AI -> Output.
+## 9. Constraints & Assumptions
+## 10. Success Metrics (quantifiable KPIs)
+## 11. Out of Scope
+## 12. Privacy & Compliance Requirements
+   - GDPR / CCPA, Cookie consent, Data retention.
 ```
+
+✅ **Verification Checklist:**
+- [ ] The PRD clearly defines what is in the MVP vs what is deferred.
+- [ ] Requirements mapping to user stories is consistent.
+- [ ] You have reviewed the rendering strategies with Next.js capabilities in mind.
 
 ---
 
 ### Prompt 0.3: Create Technical Design Document
 
 ```text
-You are a Senior Software Architect specializing in Next.js. Based on this PRD:
+You are a Principal Next.js Architect. You excel at designing scalable, maintainable, and highly performant web applications using the latest Next.js features (App Router, Server Components). Based on this PRD:
 
 [Paste your PRD here]
 
-Required: Create a Technical Design Document containing:
+Constraints:
+- Do NOT recommend Pages Router. Strictly stick to App Router.
+- Do NOT recommend traditional Redux unless strictly necessary; prefer React 19 native state/context or Zustand.
+- Ensure authentication recommendations align with Next.js edge compatibility if middleware is used.
+
+Required Output Format: Create a Technical Design Document containing:
 
 ## 1. Architecture Overview
-   - App Router architecture and patterns
    - Server Components vs Client Components strategy
    - Route Handlers vs Server Actions strategy
-   - Middleware usage plan
-   - Parallel Routes and Intercepting Routes plan
-   - Route Groups organization
 ## 2. Technology Stack Decisions
-   - Next.js version (latest stable — see Phase 0.7 compatibility table)
-   - React version (19+)
-   - Database: PostgreSQL (Neon/Supabase), MongoDB, Convex, or other
-   - ORM: Prisma, Drizzle ORM, or direct database driver (unless using Convex)
-   - Authentication: Better Auth, Auth.js v5, Clerk, or custom
-   - Email: Resend with React Email
-   - UI Library: Tailwind CSS v4, Shadcn/ui, or other
-   - State Management: Zustand, Jotai, or React Context (note: React 19 reduces need for state management)
-   - AI Integration: Vercel AI SDK (if applicable)
-   - Payments: Stripe (if applicable)
-   - File Upload: UploadThing, Vercel Blob, or Cloudinary
-   - Deployment: Vercel, AWS, or other
-   - Bundler: Turbopack (default in latest Next.js)
-   - Linting: Biome (recommended) or ESLint flat config
-   - Testing: Vitest + Playwright
-   - Analytics: PostHog (open-source) or Vercel Analytics
-   - Error Tracking: Sentry
+   - Ensure you use the Phase 0.7 compatibility matrix.
+   - Include an Architecture Decision Record (ADR) style justification for: Database, ORM, Auth, Styling.
 ## 3. Detailed Project Structure
-   - App Router structure (app/, components/, lib/, etc.)
-   - Route Groups, Parallel Routes, Intercepting Routes
-   - Public assets organization
-## 4. Database Schema Design
-## 5. Route Handlers Specifications (if using Route Handlers)
-## 6. Server Actions Design (primary approach for mutations)
-## 7. Authentication & Authorization Flow
-## 8. Error Handling Strategy
-   - Error boundaries (error.tsx, global-error.tsx, not-found.tsx)
-   - Retry logic for external API calls
-   - Graceful degradation patterns
-## 9. Security Considerations
-## 10. Performance Optimization Strategy (including PPR)
-## 11. Testing Strategy (Vitest + Playwright)
-## 12. AI Integration Strategy (if applicable)
-## 13. API Documentation & Versioning Strategy
-   - OpenAPI/Swagger documentation approach
-   - API versioning strategy (URL prefix, header, or query param)
-   - SDK generation plan (if public API)
-## 14. Monorepo Considerations (if applicable)
-   - Turborepo setup for shared packages
-   - Shared UI component library
-   - Shared TypeScript types and validation schemas
-
-Justify each technology choice with reasoning.
+   - Example folder tree highlighting Route Groups.
+## 4. Database Schema Design (High-Level)
+## 5. Next.js Patterns Specifications
+   - Server Actions Design (primary approach for mutations)
+## 6. Authentication & Authorization Flow
+## 7. Error Handling & Resilience Strategy
+## 8. Security Considerations (OWASP alignment)
+## 9. Performance Optimization Strategy (including PPR)
+## 10. Testing Strategy
+## 11. API Documentation Strategy
+## 12. Tradeoff Analysis
+   - Specifically note the drawbacks of the chosen stack (e.g., "Prisma has higher cold start times in serverless, so we will use Prisma Accelerate").
 ```
+
+✅ **Verification Checklist:**
+- [ ] Architecture aligns with the PRD requirements.
+- [ ] Next.js version capabilities (e.g., React 19) are considered fully.
 
 ---
 
 ### Prompt 0.4: Break Down Into Tasks
 
 ```text
-You are an Agile Project Manager. Based on this Technical Design Document:
+You are an Agile Technical Project Manager and Scrum Master. Based on this Technical Design Document:
 
 [Paste your Technical Design Document here]
 
-Required: Break the project into actionable tasks in Kanban format.
+Constraints:
+- Tasks must be small enough to be completed in 2-4 hours.
+- Tasks must have clear dependencies.
+- Avoid vague "Implement feature X" descriptions; be highly specific.
 
-## Task Format:
-For each task:
+Required Output Format: Break the project into actionable tasks in Kanban format.
+
+## Task Format (For each task):
 - **ID**: TASK-001
 - **Title**: Clear, action-oriented title
 - **Category**: [Setup/Backend/Frontend/Database/Auth/Features/AI/Testing/Deployment/Security/DevOps]
@@ -162,110 +155,88 @@ For each task:
 - **Estimated Time**: [hours]
 - **Dependencies**: List task IDs that must be completed first
 - **Description**: Detailed what needs to be done
-- **Acceptance Criteria**: How do we know it's complete? (checklist)
-- **Technical Notes**: Hints, gotchas, resources
+- **Risk Assessment**: Identify any technical risks specific to this task.
+- **Acceptance Criteria**: Checkbox list to prove completion.
 - **Phase Reference**: Which workflow phase this maps to (Phase 1-20)
 
-Order tasks by dependencies so they can be completed sequentially.
-Create at least 30-50 tasks for a medium-sized project.
-
-Group tasks into milestones:
-- **Milestone 1**: Project Setup & Infrastructure (Phase 1-3)
-- **Milestone 2**: Core Features & Auth (Phase 4-6)
-- **Milestone 3**: Testing & Security (Phase 7-8)
-- **Milestone 4**: Polish & Optimization (Phase 9-10)
-- **Milestone 5**: Deployment & Launch (Phase 11-14)
-- **Milestone 6**: Advanced Features (Phase 15-20)
+Group tasks into these Milestones:
+- Milestone 1: Infrastructure & Auth (Phase 1-4)
+- Milestone 2: Core UI & Database (Phase 3, 5)
+- Milestone 3: Advanced Features & AI (Phase 6, 15, 16)
+- Milestone 4: Security, QA, Perf (Phase 7-10)
+- Milestone 5: Launch & Obs (Phase 11-14, 18-20)
 ```
+
+✅ **Verification Checklist:**
+- [ ] Task IDs are unique and sequential.
+- [ ] No circular dependencies exist.
+- [ ] Time estimates align with your stated availability.
 
 ---
 
 ### Prompt 0.5: Create Wireframes for Project
 
 ```text
-You are a UI/UX Designer. Create wireframes for [ProjectName] using Next.js.
+You are an expert UI/UX Designer specializing in Next.js applications and component-driven design. Create wireframes for [ProjectName].
 
-Required Output:
-1. Sketch main pages/screens:
-   - Landing/Home Page
-   - Login/Register Pages (including OAuth buttons, magic link, passkey option)
-   - Dashboard/User Panel
-   - Resource Management Pages (List, Detail, Form)
-   - Settings & Profile Page
-   - Notifications/Alerts Page
-   - AI Chat/Assistant Interface (if applicable)
-   - Error pages (404, 500, maintenance)
-2. Consider Next.js-specific features:
-   - Navigation patterns (client-side vs server-side)
-   - Loading states and Suspense boundaries with skeletons
-   - Error boundaries (error.tsx)
-   - Streaming UI patterns with React Suspense
-   - Parallel Routes for split-view layouts
-   - Intercepting Routes for modals
-   - Cookie consent banner placement
-3. Include layout structure:
-   - Root layout (app/layout.tsx)
-   - Nested layouts for different sections
-   - Route Groups for layout organization
-   - Template components for transitions
-4. Provide notes for each wireframe:
-   - User flow explanation
-   - Navigation hierarchy
-   - CTA (Call-to-Action) positions
-   - Responsive breakpoints (mobile, tablet, desktop)
-5. Output:
-   - ASCII-style wireframe OR image URL placeholder for AI generation
-   - Annotations for key components
-   - Consider using v0.dev to generate initial component prototypes
+Constraints:
+- Designs must account for Server Component boundaries (where interactive client components sit inside static server layouts).
+- Must adhere to a mobile-first responsive approach.
+- Assume use of `lucide-react` for icons and `shadcn/ui` for primitives.
+
+Required Output Format:
+1. Sketch main pages/screens (ASCII-style wireframe OR detailed description for a **Google Stitch** / v0.dev prompt):
+   - Landing/Home
+   - Auth (Login/Register)
+   - Dashboard
+   - 2 Core Feature Pages
+2. Information Architecture & Navigation hierarchy
+3. Next.js Layout Mapping:
+   - Map screens to Next.js route structures (e.g., `app/(dashboard)/layout.tsx`)
+   - Note where Parallel or Intercepting routes are used for modals/split-views.
+4. Loading & Error States:
+   - Define skeleton structures for `loading.tsx` boundaries.
+5. Responsive Matrix:
+   - Define a mobile-first layout strategy using intrinsic CSS grids/flexbox, `fr` units, and fluid typography rather than relying on an excessive amount of fixed-pixel media queries.
+6. (Optional) Google Stitch Design Prompt:
+   - Using the IDEA + THEME + CONTENT formula, write 3-5 structured Stitch prompts to generate high-fidelity screens for each primary view.
 ```
+
+✅ **Verification Checklist:**
+- [ ] Wireframes account for loading states (Suspense boundaries).
+- [ ] Layout mapping correctly uses Next.js app router conventions.
 
 ---
 
 ### Prompt 0.6: Create UI Design System
 
 ```text
-You are a UI/UX Designer. Create a comprehensive UI Design system for [ProjectName] using Next.js and Tailwind CSS v4.
+You are a Principal UI/UX Engineer. Create a comprehensive UI Design system for [ProjectName] using Next.js and Tailwind CSS v4.
 
-Required Output:
-1. Color Palette
-   - Primary, Secondary, Accent, Background, Text colors
-   - Light & Dark Mode variants using CSS custom properties
-   - Tailwind CSS v4 theme configuration (CSS-based, not JS config)
-   - Use oklch() color space for perceptually uniform colors
+Constraints:
+- Use Tailwind v4 CSS-based configuration (no `tailwind.config.js` unless explicitly necessary for legacy plugins).
+- Do not use generic names like "blue"; use semantic tokens (e.g., `primary`, `accent`).
+- Must pass WCAG 2.2 AA accessibility standards.
+
+Required Output Format:
+1. Color Palette (oklch)
+   - Light & Dark mode mapping matrices.
 2. Typography
-   - Font families for headings, body, buttons
-   - Font sizes, weights, line heights
-   - Arabic & Latin font pairing if multilingual
-   - next/font configuration for Google Fonts or local fonts
-3. Components
-   - Buttons, Inputs, Forms
-   - Cards, Tables, Modals, Alerts
-   - Navigation (Header, Footer, Sidebar)
-   - Notifications, Toasts (sonner), Loading indicators
-   - Shadcn/ui component integration plan (if using)
-   - Skeleton components for loading states
-4. Layout & Spacing
-   - Container widths, margins, paddings
-   - Grid system (desktop, tablet, mobile)
-   - Tailwind CSS v4 spacing scale
-5. Design Tokens
-   - CSS custom properties for theming (Tailwind v4 approach)
-   - @theme directive configuration
-6. Accessibility
-   - Contrast ratios (WCAG 2.2 AA minimum)
-   - Focus states (focus-visible)
-   - ARIA labels
-   - Keyboard navigation
-   - Reduced motion preferences (@media prefers-reduced-motion)
-7. Motion & Animation
-   - Framer Motion integration
-   - Micro-interactions
-   - Page transitions
-   - View Transitions API
-   - Respect prefers-reduced-motion
-
-Include Tailwind CSS v4 configuration snippets using the new CSS-based config approach.
+   - Recommendations for Google Fonts via `next/font`.
+3. Design Token Naming Convention
+   - E.g., `--color-primary-500` mapping strategy.
+4. Component Variant Matrix
+   - Define button variants (default, outline, ghost) and sizes.
+5. Motion & Animation Strategy
+   - Define default transition durations and Framer Motion spring configs.
+6. Accessibility (a11y) Baseline
+   - Focus ring styling, screen reader text strategies (`sr-only`), reduced motion toggles (`prefers-reduced-motion`).
 ```
+
+✅ **Verification Checklist:**
+- [ ] Design tokens leverage `@theme` from Tailwind v4.
+- [ ] Light/Dark mode variables are properly isolated.
+- [ ] Font imports align with Next.js optimization practices.
 
 ---
 
@@ -280,19 +251,12 @@ Use this table to determine which features are available in your Next.js version
 | Server Actions | ✅ Stable | ✅ Stable | ✅ Stable | `'use server'` directive |
 | Turbopack (dev) | ⚡ Beta | ✅ Stable | ✅ Default | `--turbopack` flag (14-15), default (16+) |
 | Turbopack (build) | ❌ | 🧪 Alpha | ✅ Stable | Production builds |
-| Partial Prerendering (PPR) | 🧪 Experimental | 🧪 Experimental | ✅ Stable | `experimental.ppr` in config |
+| Partial Prerendering | 🧪 Exp | 🧪 Exp | ✅ Stable | `experimental.ppr` in config |
 | React 19 | ❌ | ✅ Stable | ✅ Stable | `useActionState`, `useOptimistic`, `use()` |
-| React Compiler | ❌ | 🧪 Experimental | ✅ Stable | Auto-memoization, no manual `useMemo`/`useCallback` |
-| `after()` API | ❌ | 🧪 Experimental | ✅ Stable | Background tasks after response |
-| `forbidden()` / `unauthorized()` | ❌ | 🧪 Experimental | ✅ Stable | Auth-specific error helpers |
+| React Compiler | ❌ | 🧪 Exp | ✅ Stable | Auto-memoization |
+| `after()` API | ❌ | 🧪 Exp | ✅ Stable | Background tasks after response |
 | `next.config.ts` | ❌ | ✅ Stable | ✅ Stable | TypeScript config file |
-| Async `searchParams` / `params` | ❌ | ✅ Required | ✅ Required | Must `await` in 15+ |
-| `unstable_cache` | ✅ | ✅ | ⚠️ May rename | May become `cache()` — add stability caveats |
-| `cacheLife` / `cacheTag` | ❌ | 🧪 Experimental | ✅ Stable | Replaces `unstable_cache` |
-| View Transitions | ❌ | ❌ | 🧪 Experimental | CSS View Transitions API |
-| Middleware (enhanced) | ✅ | ✅ | ✅ | Route matching, headers, rewrites |
-| `instrumentation.ts` | ✅ Stable | ✅ Stable | ✅ Stable | OpenTelemetry, monitoring setup |
-| Static Indicator | ❌ | ✅ | ✅ | Dev mode visual indicator |
+| Async Params | ❌ | ✅ Req | ✅ Req | Must `await searchParams` in 15+ |
 
 **React 19 Hooks Reference:**
 
@@ -301,6 +265,93 @@ Use this table to determine which features are available in your Next.js version
 | `useActionState` | Form state with Server Actions | `useFormState` (deprecated) |
 | `useOptimistic` | Optimistic UI updates | Manual state + rollback |
 | `use()` | Unwrap promises/context in render | `useEffect` + `useState` for data |
-| `useFormStatus` | Pending state for forms | Manual `isPending` state |
 
-> **Tip:** Always run `npx next info` to check your current Next.js and React versions, and consult the [Next.js Upgrade Guide](https://nextjs.org/docs/app/building-your-application/upgrading) when moving between major versions.
+> **⚠️ Common Pitfalls:**
+> 1. **Forgetting to await params:** In Next 15+, `searchParams` and `params` are Promises. Failing to `await` them causes runtime errors.
+> 2. **Over-using client components:** Default to Server Components. Only drop `'use client'` down the tree to the specific interactive nodes.
+
+---
+📎 **Related Phases:**
+- Proceeds to: [Phase 1: Project Structure & Configuration](./PHASE_1_PROJECT_STRUCTURE__CONFIGURATION_Full-Stack_Developer.md)
+
+---
+
+<a name="prompt-08"></a>
+### Prompt 0.8: Google Stitch — AI-Powered Design Ideation & DESIGN.md
+
+```text
+You are a Design Agent Specialist using Google Stitch (stitch.withgoogle.com) to accelerate UI ideation for a Next.js project.
+
+What is Google Stitch?
+Stitch is Google's AI-powered design tool that generates high-fidelity UI screens from natural language prompts. It outputs a `DESIGN.md` file — a plain-text, agent-readable design system document that serves as the visual "source of truth" alongside your code.
+
+Key Concepts:
+- **Prompt Formula:** IDEA + THEME + CONTENT
+  - IDEA: High-level project goal (e.g., "A fitness tracking dashboard")
+  - THEME: Visual direction using adjectives (e.g., "Sleek, dark mode, neon green accents")
+  - CONTENT: Specific UI elements/data (e.g., "Weekly progress chart, calorie counter, workout list")
+- **DESIGN.md:** A living artifact that defines your color palette, typography, spacing, and component patterns. Design agents (Stitch) read it; coding agents (Claude, Cursor) consume it to maintain visual consistency.
+- **Iterative Refinement:** Start with a broad prompt, then refine screen-by-screen. Apply the "one major change at a time" rule for best results.
+
+Constraints:
+- Generate screens for both **Web** and **Mobile App** device types to cover responsive needs.
+- Use Stitch's design variation feature to explore 2-3 alternatives before committing to a direction.
+- Export the `DESIGN.md` and place it at the project root so coding agents can reference it automatically.
+- When downloading artifacts, cross-reference the generated HTML/CSS with your Tailwind v4 design tokens — do NOT blindly copy raw inline styles.
+
+Required Output Format:
+1. Five structured Stitch prompts (one per primary screen: Landing, Auth, Dashboard, Detail View, Settings) following the IDEA + THEME + CONTENT formula.
+2. A `DESIGN.md` file defining:
+   - Color palette (with oklch/hex values)
+   - Typography scale (font families, sizes, weights)
+   - Spacing system (base unit, scale)
+   - Component patterns (cards, buttons, inputs, navigation)
+3. A mapping table from Stitch's generated screens → Next.js route files.
+
+⚠️ Common Pitfalls:
+- **Pitfall:** Treating Stitch output as final production code. Stitch generates HTML for design visualization — it is NOT optimized for React Server Components or Next.js routing.
+- **Solution:** Use Stitch strictly for **design ideation and `DESIGN.md` generation**. Translate its visual output into your component library manually or via coding agents.
+- **Pitfall:** Generating all screens in one massive prompt, resulting in inconsistent styling across pages.
+- **Solution:** Generate one screen at a time. Let Stitch build a visual identity from the first screen, then iterate subsequent screens referencing the established `DESIGN.md`.
+```
+
+✅ **Verification Checklist:**
+- [ ] `DESIGN.md` exists at the project root and contains color, typography, spacing, and component sections.
+- [ ] Each primary screen has at least 2 design variations explored in Stitch before finalizing.
+- [ ] The design tokens in `DESIGN.md` are consistent with your `globals.css` / Tailwind `@theme` definitions.
+
+---
+
+### Prompt 0.9: Stitch SDK & MCP Integration (Agent Automation)
+
+```text
+You are a Design Automation Engineer. Integrate Google Stitch's SDK and MCP (Model Context Protocol) server into an agent-driven development workflow.
+
+Integration Options:
+1. **MCP Server (Remote):** Stitch operates as a Remote MCP Server, allowing AI agents (Cursor, VSCode, custom agents) to programmatically create projects, generate/edit screens, and extract design systems.
+2. **SDK (`@google/stitch-sdk/ai`):** Direct TypeScript integration with the Vercel AI SDK for programmatic design generation.
+
+Constraints:
+- Authentication must use persistent **API Keys** for CI/headless workflows, or OAuth browser flow for interactive use.
+- Agent workflows must follow a create → generate → iterate → download pipeline.
+- Downloaded artifacts (ZIP) contain generated code and optimized image assets — extract images to `public/` and reference in Next.js components.
+
+Required Output Format: Provide code for:
+1. SDK setup: Installing `@google/stitch-sdk/ai` and initializing the client with API key authentication.
+2. Agent workflow script: A Node.js script that:
+   - Creates a new Stitch project
+   - Generates 3 screens from text prompts
+   - Downloads artifacts (code + assets)
+   - Extracts the `DESIGN.md` to the project root
+3. MCP configuration: JSON config for adding Stitch as a remote MCP server in Cursor/VSCode settings.
+4. `callTool` examples: Using `stitch.callTool("create_project", {...})` and `stitch.callTool("generate_screen_from_text", {...})` for lower-level agent control.
+
+⚠️ Common Pitfalls:
+- **Pitfall:** Using Stitch SDK output (HTML) directly as React components without adaptation.
+- **Solution:** Stitch supports translation to React, Vue, Angular, Flutter, SwiftUI, and Jetpack Compose — but always validate the output against your component library and design system before integration.
+```
+
+✅ **Verification Checklist:**
+- [ ] Run the agent workflow script end-to-end. Verify it creates a project, generates screens, and downloads a ZIP artifact successfully.
+- [ ] Verify Stitch appears as an available MCP tool in your IDE after adding the config.
+- [ ] The extracted `DESIGN.md` matches the visual identity of the generated screens.

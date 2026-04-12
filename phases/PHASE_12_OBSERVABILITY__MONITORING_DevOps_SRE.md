@@ -8,271 +8,77 @@
 ### Prompt 12.1: OpenTelemetry Implementation
 
 ```text
-You are an SRE. Implement full observability stack using OpenTelemetry (OTel).
+You are a Site Reliability Engineer (SRE). Implement a full observability stack using OpenTelemetry (OTel).
 
-Tools: **OpenTelemetry (Auto-instrumentation)** + **Grafana/Tempo/Loki** or **Honeycomb/Datadog**
-Alternative: **Vercel Analytics** (lightweight, zero-config for Vercel deployments)
+Tool: **OpenTelemetry (Auto-instrumentation)**
 
-Required:
-1. Auto-instrumentation for Next.js (http, pg, redis)
-2. Trace propagation (client → server → db)
-3. Structured logging (Pino)
-4. Metrics export (Prometheus)
-5. Correlation ID for request tracing
+Constraints:
+- You MUST utilize Next.js's native `instrumentation.ts` hook to initialize the SDK.
+- Trace propagation must connect Next.js route handlers seamlessly to downstream database queries.
+- Disable noisy auto-instrumentation (like frequent `fs` reads).
+
+Decision Guide:
+- Use **Vercel Analytics + Sentry** if deploying to Vercel and wanting the simplest integration.
+- Use **OpenTelemetry** if bringing your own backend (Grafana/Datadog) or managing complex distributed microservices.
+
+Required Output Format: Provide complete code for:
+1. `instrumentation.ts` registration hook.
+2. `lib/otel-server.ts` configuring the NodeSDK and OTLP exporter.
+3. A Correlation ID middleware utility that attaches unique IDs to incoming requests.
+
+⚠️ Common Pitfalls:
+- **Pitfall:** Initializing OpenTelemetry in a standard React file or layout. It must run in the Node runtime before Next.js begins handling requests.
+- **Solution:** Always use the experimental `instrumentation.ts` file provided by Next.js for SDK initialization.
 ```
 
-```typescript
-// instrumentation.ts (Next.js built-in instrumentation hook)
-// ⚠️ OTel SDK init failures must be caught here — an uncaught error will crash the server
-// before it can serve any requests.
-export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    try {
-      await import('@/lib/otel-server')
-    } catch (err) {
-      console.error('Failed to initialize OpenTelemetry', err)
-    }
-  }
-}
-```
-
-```typescript
-// lib/otel-server.ts
-import { NodeSDK } from '@opentelemetry/sdk-node'
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-import { Resource } from '@opentelemetry/resources'
-import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
-
-const sdk = new NodeSDK({
-  resource: new Resource({
-    [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || 'nextjs-app',
-    [ATTR_SERVICE_VERSION]: process.env.npm_package_version || '0.0.0',
-    'deployment.environment': process.env.NODE_ENV || 'development',
-  }),
-  traceExporter: new OTLPTraceExporter({
-    url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
-  }),
-  instrumentations: [
-    getNodeAutoInstrumentations({
-      // Instrument HTTP, fetch, pg, redis, etc. automatically
-      '@opentelemetry/instrumentation-http': { enabled: true },
-      '@opentelemetry/instrumentation-fetch': { enabled: true },
-      '@opentelemetry/instrumentation-pg': { enabled: true },
-      // Disable noisy instrumentations
-      '@opentelemetry/instrumentation-fs': { enabled: false },
-    }),
-  ],
-})
-
-sdk.start()
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  sdk.shutdown().then(
-    () => console.log('OTel SDK shut down'),
-    (err) => console.error('Error shutting down OTel SDK', err)
-  )
-})
-```
-
-```text
-Required npm packages:
-- @opentelemetry/sdk-node
-- @opentelemetry/exporter-trace-otlp-http
-- @opentelemetry/resources
-- @opentelemetry/semantic-conventions
-- @opentelemetry/auto-instrumentations-node
-```
-
-#### Correlation ID Middleware:
-
-```typescript
-// lib/correlation.ts
-import { headers } from 'next/headers'
-import { randomUUID } from 'crypto'
-
-export async function getCorrelationId(): Promise<string> {
-  const headersList = await headers()
-  return headersList.get('x-correlation-id') || randomUUID()
-}
-
-// In middleware.ts — add to handleAuth or security middleware:
-// const correlationId = request.headers.get('x-correlation-id') || crypto.randomUUID()
-// response.headers.set('x-correlation-id', correlationId)
-```
-
-#### Vercel Analytics (Lightweight Alternative):
-
-```tsx
-// app/layout.tsx — Zero-config for Vercel deployments
-import { Analytics } from '@vercel/analytics/react'
-import { SpeedInsights } from '@vercel/speed-insights/next'
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>
-        {children}
-        <Analytics />
-        <SpeedInsights />
-      </body>
-    </html>
-  )
-}
-```
+✅ **Verification Checklist:**
+- [ ] Trigger an API route. Verify that the trace correctly captures the HTTP request duration AND the inner database query duration locally.
 
 ---
 
 ### Prompt 12.2: Error Tracking (Sentry)
 
 ```text
-Set up Sentry for error monitoring and performance tracing.
+You are an Application Monitoring Lead. Set up Sentry for error tracking and performance tracing.
 
-Required:
-1. Client, server, and edge configuration
-2. Source maps upload
-3. Session Replay (for debugging UI issues)
-4. Performance monitoring
-5. Environment-aware sample rates
+Constraints:
+- Sentry must be fully initialized across all Next.js environments (Client, Server, Edge).
+- Do NOT upload source maps to Sentry on generic PR preview builds to save CI/CD time, only on production builds.
+- Configure Session Replay, but aggressively mask PII (Personally Identifiable Information).
+
+Required Output Format:
+1. Provide the three config files (`sentry.client.config.ts`, `server`, `edge`).
+2. Provide the `next.config.ts` wrapper (`withSentryConfig`).
+3. Explicit instructions on how to trigger a fake exception to test the integration.
 ```
 
-```typescript
-// sentry.client.config.ts
-import * as Sentry from '@sentry/nextjs'
-
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  environment: process.env.NODE_ENV,
-
-  // Adjust sample rates by environment
-  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-  replaysSessionSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-  replaysOnErrorSampleRate: 1.0, // Always capture replay on error
-
-  integrations: [
-    Sentry.replayIntegration({
-      maskAllText: true,
-      blockAllMedia: true,
-    }),
-    Sentry.feedbackIntegration({
-      colorScheme: 'system',
-    }),
-  ],
-})
-```
-
-```typescript
-// sentry.server.config.ts
-import * as Sentry from '@sentry/nextjs'
-
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  environment: process.env.NODE_ENV,
-  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-})
-```
-
-```typescript
-// sentry.edge.config.ts
-import * as Sentry from '@sentry/nextjs'
-
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  environment: process.env.NODE_ENV,
-  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-})
-```
-
-```typescript
-// next.config.ts — Sentry integration
-import { withSentryConfig } from '@sentry/nextjs'
-
-const nextConfig = { /* ... */ }
-
-export default withSentryConfig(nextConfig, {
-  org: 'your-org',
-  project: 'your-project',
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
-  hideSourceMaps: true,
-  disableLogger: true,
-})
-```
+✅ **Verification Checklist:**
+- [ ] Add a `throw new Error('Sentry Test')` to a Server Action. Click a button to invoke it. Verify the error appears in Sentry tagged as a Node/Server error, not a browser error.
 
 ---
 
 ### Prompt 12.3: Logging Strategy (Structured Logs)
 
 ```text
-Implement structured logging with Pino.
+You are a Backend Systems Architect. Implement high-performance structured logging.
 
-Required:
-1. JSON format logs (machine readable)
-2. Log levels (debug, info, warn, error)
-3. Correlation ID integration
-4. Redaction of sensitive data (PII)
-5. Pretty printing in development only
+Tool: **Pino**
+
+Constraints:
+- Logs MUST output in JSON format in production (machine readable), but prettified in development (human readable).
+- Sensitive fields (passwords, tokens, credit cards) MUST be dynamically redacted by the logger before outputting.
+- Attach the Correlation ID to every child logger.
+
+Required Output Format:
+1. `lib/logger.ts`: Pino configuration including the redaction spec.
+2. An example of creating a child logger per-request.
+3. A list of Alerting Rules (e.g., Error Rate > 5% triggers PagerDuty).
 ```
 
-```typescript
-// lib/logger.ts
-import pino from 'pino'
+✅ **Verification Checklist:**
+- [ ] Attempt to log an object containing a `password` key. Verify the console output replaces the string with `[REDACTED]`.
 
-const isDev = process.env.NODE_ENV === 'development'
-
-export const logger = pino({
-  level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
-  redact: {
-    paths: [
-      'req.headers.authorization',
-      'req.headers.cookie',
-      'password',
-      'email',
-      'creditCard',
-      '*.password',
-      '*.email',
-    ],
-    censor: '[REDACTED]',
-  },
-  ...(isDev && {
-    transport: {
-      target: 'pino-pretty',
-      options: { colorize: true },
-    },
-  }),
-})
-
-// Create child logger with correlation ID
-export function createRequestLogger(correlationId: string) {
-  return logger.child({ correlationId })
-}
-
-// Usage in Server Actions / Route Handlers:
-// const log = createRequestLogger(await getCorrelationId())
-// log.info({ userId: session.user.id }, 'User created a post')
-// log.error({ err, postId }, 'Failed to publish post')
-```
-
-#### Alerting Rules:
-
-```text
-Set up alerting for critical metrics:
-
-1. **Error Rate > 5%** → PagerDuty / Opsgenie P1 alert
-2. **P95 Latency > 2s** → Slack notification
-3. **Database connection pool exhausted** → P1 alert
-4. **Memory usage > 80%** → Warning alert
-5. **Deployment failed** → Slack + email notification
-
-Tools:
-- Grafana Alerting (if using Grafana stack)
-- Sentry Alerts (error rate, issue frequency)
-- Vercel Monitoring (if deployed on Vercel)
-- PagerDuty / Opsgenie (on-call rotation)
-- Uptime monitoring: Checkly, Better Uptime, or UptimeRobot
-```
-
-```text
-Implement comprehensive observability stack to catch issues early and debug effectively.
-```
+---
+📎 **Related Phases:**
+- Prerequisites: [Phase 11: DevOps & Infrastructure](./PHASE_11_DEVOPS__INFRASTRUCTURE_DevOps_Engineer.md)
+- Proceeds to: [Phase 13: Deployment & CI/CD](./PHASE_13_DEPLOYMENT__CICD_DevOps_Engineer.md)

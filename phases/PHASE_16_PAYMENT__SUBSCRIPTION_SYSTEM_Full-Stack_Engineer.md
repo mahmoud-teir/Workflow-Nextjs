@@ -8,323 +8,71 @@
 ### Prompt 16.1: Stripe Integration
 
 ```text
-You are a Full-Stack Engineer. Integrate Stripe for payments and subscriptions.
+You are a FinTech Full-Stack Engineer. Integrate Stripe robustly for payments and subscriptions.
 
-Required:
-1. Checkout sessions (one-time + subscription)
-2. Webhook handling with secure signature verification
-3. Customer portal for self-service
-4. Apple Pay / Google Pay via Payment Element
-5. Idempotent webhook processing
-6. Stripe Radar for fraud detection
+Constraints:
+- Stripe Checkout Sessions and Customer Portal sessions MUST only trigger from Server Actions to keep Secret Keys strictly isolated.
+- Webhooks MUST verify the Stripe Signature.
+- Webhooks MUST be entirely Idempotent (safe to retry infinitely).
+
+Required Output Format: Provide complete code for:
+1. `app/actions/stripe.ts`: Logic to create Checkout and Customer Portal sessions.
+2. `app/api/webhooks/stripe/route.ts`: Secure webhook receiver validating signatures.
+3. Database design (Prisma or Drizzle) detailing how to store `stripeCustomerId` and `subscriptionStatus`.
+
+⚠️ Common Pitfalls:
+- **Pitfall:** Returning `NextResponse.json({ error: '...' }, { status: 500 })` inside the webhook instead of `new Response()`. Stripe webhooks in Next.js 15+ expect standard WinterCG Response objects.
+- **Solution:** Use standard `new Response('OK', { status: 200 })` to acknowledge receipts.
 ```
 
-```typescript
-// app/actions/stripe.ts
-'use server'
-
-import Stripe from 'stripe'
-import { requireAuth } from '@/lib/action-utils'
-import { db } from '@/lib/db'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-
-export async function createCheckoutSession(priceId: string) {
-  const authResult = await requireAuth()
-  if ('error' in authResult) return authResult
-
-  const { user } = authResult
-
-  // Get or create Stripe customer
-  let customerId = user.stripeCustomerId
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email,
-      metadata: { userId: user.id },
-    })
-    customerId = customer.id
-    await db.user.update({
-      where: { id: user.id },
-      data: { stripeCustomerId: customerId },
-    })
-  }
-
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: 'subscription',
-    payment_method_types: ['card'],
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=true`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=true`,
-    metadata: { userId: user.id },
-    subscription_data: {
-      metadata: { userId: user.id },
-    },
-    payment_method_collection: 'always',
-    tax_id_collection: { enabled: true },
-  })
-
-  return { success: true, data: { url: session.url } }
-}
-
-export async function createCustomerPortalSession() {
-  const authResult = await requireAuth()
-  if ('error' in authResult) return authResult
-
-  const { user } = authResult
-  if (!user.stripeCustomerId) {
-    return { success: false, error: 'No billing account found' }
-  }
-
-  const session = await stripe.billingPortal.sessions.create({
-    customer: user.stripeCustomerId,
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing`,
-  })
-
-  return { success: true, data: { url: session.url } }
-}
-```
-
-```typescript
-// app/api/webhooks/stripe/route.ts
-// ⚠️ Next.js 15+: use req.text() for rawBody — do NOT use next/headers here.
-// next/headers returns a Promise in Next.js 15+ and adds unnecessary overhead.
-// The Web Request API (req.headers.get) is synchronous and always available in Route Handlers.
-import Stripe from 'stripe'
-import { db } from '@/lib/db'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-
-export async function POST(req: Request) {
-  const rawBody = await req.text()
-  const signature = req.headers.get('stripe-signature')!
-
-  let event: Stripe.Event
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      rawBody,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    )
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err)
-    return new Response('Invalid signature', { status: 400 })
-  }
-
-  // Idempotency: Check if already processed
-  const existing = await db.webhookEvent.findUnique({
-    where: { stripeEventId: event.id },
-  })
-  if (existing) {
-    return new Response('Already processed', { status: 200 })
-  }
-
-  await db.webhookEvent.create({
-    data: { stripeEventId: event.id, type: event.type, processedAt: new Date() },
-  })
-
-  try {
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session
-        // ⚠️ CRITICAL: Use metadata.userId, NOT customer_details.email
-        const userId = session.metadata?.userId
-        if (!userId) { console.error('No userId in metadata'); break }
-        await db.user.update({
-          where: { id: userId },
-          data: {
-            subscriptionStatus: 'ACTIVE',
-            stripeSubscriptionId: session.subscription as string,
-          },
-        })
-        break
-      }
-
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription
-        const userId = subscription.metadata?.userId
-        if (!userId) break
-        await db.user.update({
-          where: { id: userId },
-          data: {
-            subscriptionStatus: subscription.status === 'active' ? 'ACTIVE' : 'PAST_DUE',
-            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-          },
-        })
-        break
-      }
-
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription
-        const userId = subscription.metadata?.userId
-        if (!userId) break
-        await db.user.update({
-          where: { id: userId },
-          data: { subscriptionStatus: 'CANCELED', stripeSubscriptionId: null },
-        })
-        break
-      }
-
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice
-        const userId = invoice.subscription_details?.metadata?.userId
-        if (userId) await sendPaymentFailedEmail(userId)
-        break
-      }
-    }
-  } catch (error) {
-    console.error(`Error processing webhook ${event.type}:`, error)
-    return new Response('Webhook processing error', { status: 500 })
-  }
-
-  return new Response('OK', { status: 200 })
-}
-```
+✅ **Verification Checklist:**
+- [ ] Attempt to trigger the webhook endpoint locally with fake data (e.g., via Postman). It MUST return a 400 with a signature verification error.
+- [ ] Complete a test transaction using Stripe CLI; verify the database updates.
 
 ---
 
 ### Prompt 16.2: Payment UI Components
 
-```tsx
-// components/pricing-card.tsx
-'use client'
+```text
+You are a Conversion Rate Optimization (CRO) Developer. Build the Pricing UI.
 
-import { createCheckoutSession } from '@/app/actions/stripe'
-import { useTransition } from 'react'
-import { toast } from 'sonner'
+Constraints:
+- Use React `useTransition` to track the loading state while the Server Action communicates with Stripe.
+- Disable the submit button immediately upon click to prevent double-billing.
 
-export function PricingCard({ plan }: { plan: PricingPlan }) {
-  const [isPending, startTransition] = useTransition()
-
-  function handleSubscribe() {
-    startTransition(async () => {
-      const result = await createCheckoutSession(plan.priceId)
-      if (result.success && result.data.url) {
-        window.location.href = result.data.url
-      } else {
-        toast.error('Failed to start checkout')
-      }
-    })
-  }
-
-  return (
-    <div className={cn('rounded-lg border p-6 space-y-4', plan.popular && 'border-primary ring-2 ring-primary')}>
-      <h3 className="text-xl font-bold">{plan.name}</h3>
-      <p className="text-3xl font-bold">{plan.price}<span className="text-sm text-muted-foreground">/mo</span></p>
-      <ul className="space-y-2">
-        {plan.features.map(f => (
-          <li key={f} className="flex items-center gap-2 text-sm">✓ {f}</li>
-        ))}
-      </ul>
-      <button onClick={handleSubscribe} disabled={isPending}
-        className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50">
-        {isPending ? 'Processing...' : 'Subscribe'}
-      </button>
-    </div>
-  )
-}
+Required Output Format: Provide complete code for:
+1. `<PricingCard>` Component connecting UI to the Stripe Server Action.
+2. Pricing Model configuration array detailing features and Price IDs.
 ```
+
+✅ **Verification Checklist:**
+- [ ] Click subscribe; verify the button instantly switches to "Processing..." and is disabled before the page redirects.
 
 ---
 
-### Prompt 16.3: Subscription Management
-
-```typescript
-// app/actions/subscription.ts
-'use server'
-
-import Stripe from 'stripe'
-import { requireAuth } from '@/lib/action-utils'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-
-export async function changePlan(newPriceId: string) {
-  const authResult = await requireAuth()
-  if ('error' in authResult) return authResult
-  const { user } = authResult
-
-  if (!user.stripeSubscriptionId) return { success: false, error: 'No active subscription' }
-
-  const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId)
-  await stripe.subscriptions.update(user.stripeSubscriptionId, {
-    items: [{ id: subscription.items.data[0].id, price: newPriceId }],
-    proration_behavior: 'create_prorations',
-  })
-
-  return { success: true, data: undefined }
-}
-
-export async function cancelSubscription() {
-  const authResult = await requireAuth()
-  if ('error' in authResult) return authResult
-  const { user } = authResult
-
-  if (!user.stripeSubscriptionId) return { success: false, error: 'No active subscription' }
-
-  await stripe.subscriptions.update(user.stripeSubscriptionId, {
-    cancel_at_period_end: true,
-  })
-
-  return { success: true, data: undefined }
-}
-
-export async function getInvoiceHistory() {
-  const authResult = await requireAuth()
-  if ('error' in authResult) return authResult
-  const { user } = authResult
-
-  if (!user.stripeCustomerId) return { success: true, data: [] }
-
-  const invoices = await stripe.invoices.list({ customer: user.stripeCustomerId, limit: 12 })
-
-  return {
-    success: true,
-    data: invoices.data.map(inv => ({
-      id: inv.id,
-      amount: inv.amount_paid / 100,
-      currency: inv.currency,
-      status: inv.status,
-      date: new Date(inv.created * 1000).toISOString(),
-      pdfUrl: inv.invoice_pdf,
-    })),
-  }
-}
-```
-
----
-
-### Prompt 16.4: PayPal Integration (Alternative)
-
-```tsx
-// components/paypal-button.tsx
-'use client'
-
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
-
-export function PayPalPayment({ amount }: { amount: string }) {
-  return (
-    <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID! }}>
-      <PayPalButtons
-        createOrder={(data, actions) => {
-          return actions.order.create({
-            intent: 'CAPTURE',
-            purchase_units: [{ amount: { value: amount, currency_code: 'USD' } }],
-          })
-        }}
-        onApprove={async (data, actions) => {
-          const details = await actions.order!.capture()
-          await fetch('/api/paypal/capture', {
-            method: 'POST',
-            body: JSON.stringify({ orderId: details.id }),
-          })
-        }}
-      />
-    </PayPalScriptProvider>
-  )
-}
-```
+### Prompt 16.3: Subscription Lifecycle Management
 
 ```text
-Implement complete payment system with Stripe (primary), subscription lifecycle, and PayPal alternative.
+You are a Subscription Economics Engineer. Handle the edge cases of subscription management.
+
+Constraints:
+- You must account for prorations if users upgrade/downgrade mid-cycle.
+- You must build an "Invoice History" view pulling past receipts.
+
+Required Output Format: Provide the Server Action logic for:
+1. `changePlan(newPriceId)`: Implementing Stripe's proration behavior.
+2. `cancelSubscription()`: Implementing `cancel_at_period_end: true` so they retain access until their paid time ends.
+3. `getInvoiceHistory()`: Fetching PDFs for the user.
+
+⚠️ Common Pitfalls:
+- **Pitfall:** Canceling a subscription immediately (`cancel()`) instead of at period end, resulting in angry customers who lost 25 days of paid access.
+- **Solution:** Always use `cancel_at_period_end: true`.
 ```
+
+✅ **Verification Checklist:**
+- [ ] Click Cancel Subscription. Verify the database `subscriptionStatus` remains `ACTIVE` but the End Date is flagged.
+
+---
+📎 **Related Phases:**
+- Prerequisites: [Phase 14: Pre-Launch Checklist](./PHASE_14_PRE-LAUNCH_CHECKLIST_All_Roles.md)
+- Proceeds to: [Phase 18: Analytics & Feature Flags](./PHASE_18_ANALYTICS__FEATURE_FLAGS_Product_Engineer.md)
