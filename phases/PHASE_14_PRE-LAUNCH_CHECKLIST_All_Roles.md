@@ -6,6 +6,27 @@
 
 ---
 
+### ⚠️ Rule: Nothing is Left Incomplete
+
+**Every page, subpage, service, function, and Server Action MUST be fully built and operational.** There are no placeholders, no `TODO` stubs, no "coming soon" sections, no mock data in production, and no dead routes.
+
+| What Must Be Complete | What "Done" Means |
+|---|---|
+| **All main pages** (`app/*/page.tsx`) | Render real content with real data flows, not skeleton text or lorem ipsum |
+| **All subpages** | Every route defined in the sitemap has a working `page.tsx` with full UI and data binding |
+| **All Server Actions** (`actions/*.ts`, `app/**/actions.ts`) | Connected to real database tables, Zod-validated, error-handled, no `throw new Error("TODO")` |
+| **All API Routes** (`app/api/**/route.ts`) | Functional handlers with real responses, no `{ message: "Not implemented" }` |
+| **All services / data layer** (`lib/services/*.ts`, `lib/repositories/*.ts`) | Implemented against real database queries, no mock returns |
+| **All components** (`components/**/*.tsx`) | Fully wired to data sources — no `const data = [{ fake: "item" }]` mocks left in production |
+| **Loading / error states** | Every async route has `loading.tsx` and `error.tsx` — not blank or default-only |
+| **Auth flows** | Sign up, sign in, sign out, password reset, session check — all connected and working |
+| **Navigation / routing** | All links in nav, footer, breadcrumbs, and sidebars resolve to real pages — no `href="#"` |
+| **Forms** | All forms submit to real Server Actions with validation and feedback — no disabled or dummy forms |
+
+**Hard rule before moving past any phase:** If any route, action, or service is left as a stub, placeholder, or mock — it **MUST be completed** before the build is considered valid.
+
+---
+
 ### Prompt 14.1: Next.js Automatic Optimizations Audit
 
 ```text
@@ -201,7 +222,7 @@ Required Output Format:
 
 ---
 
-### Prompt 14.6: Debugging Guide (Pre-Launch Hurdles)
+### Prompt 14.9: Debugging Guide (Pre-Launch Hurdles)
 
 ```text
 You are a Senior Next.js Troubleshooting Expert. Document the solutions for the most frequent issues encountered during final staging tests.
@@ -226,7 +247,44 @@ Required Output Format: Document solutions for:
 
 ---
 
-### Prompt 14.7: Automated Pre-launch Validation Script
+### Prompt 14.7: Completeness Audit — No Placeholders, No Mocks
+
+```text
+You are a QA Lead performing a final completeness audit before launch. Your job is to ensure EVERYTHING is fully built and operational — no stubs, no placeholders, no mock data.
+
+**Scan the entire codebase for these red flags:**
+
+1. **TODO comments:** Search for `TODO`, `FIXME`, `HACK`, `TEMP`, `STUB`, `PLACEHOLDER`. Each must be resolved or have an approved exception.
+
+2. **Mock data in production:** Any file in `lib/`, `components/`, `app/`, or `services/` that defines hardcoded fake data arrays (`const users = [{ name: "John Doe" }]`, `const products = [...]`, lorem ipsum text, placeholder emails). These are only allowed in dedicated `__tests__/` or `seed.ts` files.
+
+3. **Unimplemented routes:** Compare the sitemap (Section 4 of `.stitch/SITE.md` or `app/` route structure) against actual `page.tsx` files. Every route must have a fully functional page — no "Coming Soon" or "Under Construction" pages.
+
+4. **Empty Server Actions:** Any Server Action that returns early, throws `new Error("Not implemented")`, or has an empty body. All actions must have real database operations.
+
+5. **Dead links:** Any `<Link>` or `<a>` with `href="#"`, `href="/"`, or `href="/#"` that doesn't navigate to a real subpage. All internal links must resolve to actual routes.
+
+6. **Unconnected forms:** Any `<form>` that doesn't have a real `action` pointing to a functional Server Action or API route.
+
+7. **Disabled UI elements:** Any button, input, or link with `disabled={true}` that doesn't have a valid business reason (e.g., loading state). No permanently disabled elements.
+
+8. **Missing error handling:** Every async operation must have try/catch, error boundaries, or Zod validation. No raw `await` without error handling.
+
+**Required Output Format:**
+1. A completeness report grouped by category (Pages, Actions, Services, Components, Routes).
+2. For each category: list every file, its status (✅ Complete / ⚠️ Partial / ❌ Incomplete), and specific missing pieces for any non-complete items.
+3. A final verdict: **PASS** (everything complete) or **FAIL** (list what must be finished).
+
+**Verdict rule:** If ANY item is marked ⚠️ or ❌, the audit FAILS and the project cannot ship.
+```
+
+✅ **Verification Checklist:**
+- [ ] Completeness report generated with zero items marked ⚠️ or ❌.
+- [ ] Grep for `TODO|FIXME|mockData|placeholder|coming.soon|lorem.ipsum` returns zero results in source files (excluding tests and seed scripts).
+
+---
+
+### Prompt 14.8: Automated Pre-launch Validation Script
 
 ```text
 You are a DevOps Engineer. Write a CLI bash script that developers must run before they are allowed to promote code to production.
@@ -246,7 +304,9 @@ Required Output Format: Provide a `bash` script (`scripts/pre-launch-check.sh`) 
 7. Environment variables verification (asserting all required keys from `env.ts` exist).
 8. SEO verification (assert `sitemap.xml`, `robots.txt`, and `manifest.json` are generated in `.next`).
 9. Security headers check (start the server, `curl -I localhost:3000`, verify CSP/X-Frame-Options/etc.).
-10. Lighthouse CI (optional — `npx @lhci/cli autorun` if configured).
+10. **Completeness check** — grep for `TODO|FIXME|STUB|PLACEHOLDER|coming.soon|lorem.ipsum` in all source files (excluding `__tests__/` and `seed.ts`). Halt with `exit 1` if any found.
+11. **Dead link check** — grep for `href="#"` or `href="/#"` in all `.tsx` files (excluding buttons with explicit `onClick` handlers). Halt with `exit 1` if any found.
+12. Lighthouse CI (optional — `npx @lhci/cli autorun` if configured).
 ```
 
 ✅ **Verification Checklist:**
@@ -256,7 +316,7 @@ Required Output Format: Provide a `bash` script (`scripts/pre-launch-check.sh`) 
 
 ---
 
-### Prompt 14.8: Local Production Smoke Test
+### Prompt 14.10: Local Production Smoke Test
 
 ```text
 You are a QA Lead. Before deploying, perform a local production smoke test to catch issues that only appear in production mode.
@@ -290,6 +350,7 @@ Required Output Format: A pass/fail smoke test report with screenshots for any f
 - [ ] `next build` output shows zero errors.
 - [ ] `next start` renders all primary routes without JavaScript errors in the console.
 - [ ] Core Web Vitals pass on throttled 4G connection.
+- [ ] **Completeness audit:** Zero `TODO` comments, no mock data (`const data = [...]`), no placeholder strings (`"lorem ipsum"`, `"coming soon"`, `"TBD"`), no `href="#"` links, no empty Server Actions, no unimplemented API routes. Every route defined in the sitemap is fully built.
 
 ---
 📎 **Related Phases:**

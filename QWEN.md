@@ -13,32 +13,41 @@ workflows/
 ├── README.md                                  # General GitHub profile readme (unrelated content)
 ├── phases.zip                                 # Archived copy of the phases directory
 ├── QWEN.md                                    # This file
-└── phases/
-    ├── PHASE_0_PLANNING__SETUP_*.md           # Prompts 0.1–0.7: ideation, PRD, tech design, task breakdown, wireframes, design system, version compat
-    ├── PHASE_1_PROJECT_STRUCTURE__*.md        # Prompts 1.1–1.3: project init, next.config.ts, CLAUDE.md template
-    ├── PHASE_2_BACKEND_SETUP_*.md             # API Routes & Server Actions
-    ├── PHASE_3_DATABASE_MODELS__*.md          # Database schema & ORM integration
-    ├── PHASE_4_AUTHENTICATION__*.md           # Auth & authorization
-    ├── PHASE_5_FRONTEND_DEVELOPMENT_*.md      # UI component development
-    ├── PHASE_6_ADVANCED_FEATURES_*.md         # Advanced Next.js features
-    ├── PHASE_7_TESTING_QA__*.md               # Testing strategy (Vitest + Playwright)
-    ├── PHASE_8_SECURITY_AUTOMATION_*.md       # DevSecOps & security hardening
-    ├── PHASE_9_ACCESSIBILITY__*.md            # a11y & i18n
-    ├── PHASE_10_PERFORMANCE_OPTIMIZATION_*.md # Frontend/backend performance
-    ├── PHASE_11_DEVOPS__INFRASTRUCTURE_*.md   # Infrastructure setup
-    ├── PHASE_12_OBSERVABILITY__MONITORING_*.md# Monitoring & observability
-    ├── PHASE_13_DEPLOYMENT__CICD_*.md         # CI/CD pipelines (GitHub Actions)
-    ├── PHASE_14_PRE-LAUNCH_CHECKLIST_*.md     # Pre-launch checklist
-    ├── PHASE_15_AI__LLM_INTEGRATION_*.md      # Vercel AI SDK, LLM integration
-    ├── PHASE_16_PAYMENT__SUBSCRIPTION_*.md    # Stripe payments & subscriptions
-    ├── PHASE_17_MOBILE__PWA_*.md              # Mobile & PWA development
-    ├── PHASE_18_ANALYTICS__FEATURE_FLAGS_*.md # Analytics & feature flags
-    ├── PHASE_19_API_DOCUMENTATION__*.md       # API docs & versioning
-    ├── PHASE_20_ERROR_HANDLING__*.md          # Error handling & resilience
-    └── agent_workflows/                        # Agent-executable step-by-step workflows
-        ├── 00-planning-setup-*.md
-        ├── 01-project-structure-*.md
-        └── ... (one per phase)
+├── phases/
+│   ├── PHASE_0_PLANNING__SETUP_*.md           # Prompts 0.1–0.7: ideation, PRD, tech design, task breakdown, wireframes, design system, version compat
+│   ├── PHASE_1_PROJECT_STRUCTURE__*.md        # Prompts 1.1–1.3: project init, next.config.ts, CLAUDE.md template
+│   ├── PHASE_2_BACKEND_SETUP_*.md             # API Routes & Server Actions
+│   ├── PHASE_3_DATABASE_MODELS__*.md          # Database schema & ORM integration
+│   ├── PHASE_4_AUTHENTICATION__*.md           # Auth & authorization
+│   ├── PHASE_5_FRONTEND_DEVELOPMENT_*.md      # UI component development
+│   ├── PHASE_6_ADVANCED_FEATURES_*.md         # Advanced Next.js features
+│   ├── PHASE_7_TESTING_QA__*.md               # Testing strategy (Vitest + Playwright)
+│   ├── PHASE_8_SECURITY_AUTOMATION_*.md       # DevSecOps & security hardening
+│   ├── PHASE_9_ACCESSIBILITY__*.md            # a11y & i18n
+│   ├── PHASE_10_PERFORMANCE_OPTIMIZATION_*.md # Frontend/backend performance
+│   ├── PHASE_11_DEVOPS__INFRASTRUCTURE_*.md   # Infrastructure setup
+│   ├── PHASE_12_OBSERVABILITY__MONITORING_*.md# Monitoring & observability
+│   ├── PHASE_13_DEPLOYMENT__CICD_*.md         # CI/CD pipelines (GitHub Actions)
+│   ├── PHASE_14_PRE-LAUNCH_CHECKLIST_*.md     # Pre-launch checklist
+│   ├── PHASE_15_AI__LLM_INTEGRATION_*.md      # Vercel AI SDK, LLM integration
+│   ├── PHASE_16_PAYMENT__SUBSCRIPTION_*.md    # Stripe payments & subscriptions
+│   ├── PHASE_17_MOBILE__PWA_*.md              # Mobile & PWA development
+│   ├── PHASE_18_ANALYTICS__FEATURE_FLAGS_*.md # Analytics & feature flags
+│   ├── PHASE_19_API_DOCUMENTATION__*.md       # API docs & versioning
+│   ├── PHASE_20_ERROR_HANDLING__*.md          # Error handling & resilience
+│   └── agent_workflows/                        # Agent-executable step-by-step workflows
+│       ├── 00-planning-setup-*.md
+│       ├── 01-project-structure-*.md
+│       └── ... (one per phase)
+└── stitch-skills/                              # Google Stitch Design Skills (from google-labs-code/stitch-skills)
+    ├── design-md/                              # Analyze Stitch projects → DESIGN.md files
+    ├── enhance-prompt/                         # Transform vague UI ideas into Stitch-optimized prompts
+    ├── react-components/                       # Convert Stitch designs → modular React components
+    ├── remotion/                               # Generate walkthrough videos from Stitch projects
+    ├── shadcn-ui/                              # shadcn/ui component integration guide
+    ├── stitch-design/                          # Unified Stitch design expert (prompt enhancement + synthesis)
+    ├── stitch-loop/                            # Autonomous iterative site-building loop (baton system)
+    └── taste-design/                           # Premium, anti-generic DESIGN.md generator
 ```
 
 ### File Naming Convention
@@ -80,6 +89,23 @@ The workflows target a modern (2025–2026) Next.js stack:
 4. **Use agent_workflows/ for automation.** The `agent_workflows/` subdirectory contains structured workflows with prerequisites, step-by-step actions, file targets, and verification checklists — suitable for automated agent execution.
 5. **Reference the version compatibility table.** Phase 0.7 contains a detailed matrix of feature availability across Next.js 14, 15, and 16+.
 
+## Google Stitch Design Skills
+
+The `stitch-skills/` directory contains 8 skills from [google-labs-code/stitch-skills](https://github.com/google-labs-code/stitch-skills) for UI design generation via Google Stitch MCP:
+
+| Skill | Purpose | When to Use |
+|---|---|---|
+| **design-md** | Analyze Stitch projects → synthesize `DESIGN.md` | After generating your first screen, extract its design system |
+| **enhance-prompt** | Transform vague UI ideas → structured Stitch prompts | Before any screen generation from rough concepts |
+| **react-components** | Convert Stitch HTML → modular React/Vite components | Phase 5 (Frontend) — convert designs to code |
+| **remotion** | Generate walkthrough videos from Stitch screens | Demo/presentation video generation |
+| **shadcn-ui** | shadcn/ui component catalog & integration guide | When implementing UI components with shadcn/ui |
+| **stitch-design** | Unified design expert (prompt enhancement + synthesis) | All-in-one: enhance prompts, generate/edit screens |
+| **stitch-loop** | Autonomous iterative site-building (baton system) | Build entire sites page-by-page automatically |
+| **taste-design** | Premium, anti-generic `DESIGN.md` generator | When you want curated, non-generic design aesthetics |
+
+**Integration with Phases:** Stitch skills complement **Phase 0 (Planning)** for design exploration and **Phase 5 (Frontend)** for component generation. Use `stitch-loop` for rapid prototyping before Phase 1 implementation.
+
 ## Development Conventions Embedded in the Workflows
 
 - **Server Components by default** — only add `'use client'` when necessary (interactivity, hooks, browser APIs).
@@ -91,6 +117,7 @@ The workflows target a modern (2025–2026) Next.js stack:
 - **File naming** — kebab-case for files, PascalCase for components, camelCase for utilities.
 - **Commit format** — Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`).
 - **Error handling** — `error.tsx`, `global-error.tsx`, `not-found.tsx` per route; graceful degradation.
+- **Nothing incomplete** — all pages, subpages, services, functions, Server Actions, API routes, and components MUST be fully built and operational. No placeholders, no `TODO` stubs, no mock data, no "coming soon" sections, no dead routes. Every route must have working data flows, validation, and error handling.
 
 ## Phases at a Glance
 

@@ -12,6 +12,9 @@ You are a Product Engineer. Implement product analytics in a Next.js App Router 
 
 Target: **PostHog** (or Plausible / Umami)
 
+**Step 1 — Install Dependencies:**
+Run: `npm install posthog-js` (or your chosen SDK). Verify the package appears in your `package.json`.
+
 Constraints:
 - You MUST ensure the analytics SDK does not block initial hydration.
 - The `PostHogProvider` must be structured so it correctly captures single-page app (SPA) navigations via `usePathname()`.
@@ -28,6 +31,7 @@ Required Output Format: Provide complete code for:
 ```
 
 ✅ **Verification Checklist:**
+- [ ] `posthog-js` (or alternative) is listed in `package.json` dependencies.
 - [ ] Navigate between 3 internal pages using `next/link`. Check PostHog dashboard to verify it captured 3 distinct page views without full HTML reloads.
 
 ---

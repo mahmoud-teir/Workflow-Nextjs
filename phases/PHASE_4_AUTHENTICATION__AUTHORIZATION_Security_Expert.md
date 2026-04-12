@@ -37,9 +37,49 @@ Required Output Format: Provide complete code for:
 ⚠️ Common Pitfalls:
 - **Pitfall:** `middleware.ts` intercepting all traffic including `_next/static` assets, drastically slowing down site rendering.
 - **Solution:** Ensure the middleware `matcher` regex strictly excludes static files, fonts, and images.
+- **Pitfall (Better Auth + Drizzle):** `[# Drizzle Adapter]: The model "user" was not found in the schema object. Please pass the schema directly to the adapter options.`
+- **Solution:** When using Better Auth with Drizzle ORM, you **MUST** explicitly pass your Drizzle schema tables to the adapter. Do not rely on auto-discovery. Configure it like this:
+  ```ts
+  import { betterAuth } from "better-auth";
+  import { drizzleAdapter } from "better-auth/adapters/drizzle";
+  import * as schema from "@/db/schema";
+
+  export const auth = betterAuth({
+    database: drizzleAdapter(db, {
+      schema: {
+        user: schema.user,
+        session: schema.session,
+        account: schema.account,
+        verification: schema.verification,
+      },
+    }),
+  });
+  ```
+  The `schema` object keys (`user`, `session`, etc.) are the internal model names Better Auth expects. The values are your actual Drizzle table exports.
+- **Pitfall (Better Auth + Drizzle):** `The field "createdAt" does not exist in the "account" Drizzle schema.`
+- **Solution:** Better Auth requires specific columns on all auth tables. Either **auto-generate** the correct schema or add the missing fields manually:
+
+  **Recommended — Auto-generate:**
+  ```bash
+  npx auth@latest generate
+  ```
+
+  **Manual — Add missing fields to your Drizzle schema:**
+  ```ts
+  // db/schema.ts — account table
+  export const account = pgTable("account", {
+    // ... existing fields ...
+    createdAt: timestamp("created_at").defaultNow(),  // ← Required by Better Auth
+    updatedAt: timestamp("updated_at").defaultNow(),  // ← Required by Better Auth
+  });
+  ```
+
+  Similarly, ensure `user`, `session`, and `verification` tables also include `createdAt` / `updatedAt` if Better Auth reports missing fields on those models.
 ```
 
 ✅ **Verification Checklist:**
+- [ ] If using Better Auth + Drizzle: run `npx auth@latest generate` to scaffold the correct schema, OR verify all auth tables (`user`, `session`, `account`, `verification`) include `createdAt` and `updatedAt` fields.
+- [ ] If using Better Auth + Drizzle: the `drizzleAdapter` config includes an explicit `schema` object mapping all required models (`user`, `session`, `account`, `verification`).
 - [ ] Create an account.
 - [ ] Verify database contains hashed password, not plaintext.
 - [ ] Log out / invalidate session; verify token cookie is deleted.
