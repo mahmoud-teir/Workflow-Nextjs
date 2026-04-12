@@ -5,7 +5,7 @@
 [![Tailwind v4](https://img.shields.io/badge/Tailwind-v4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-A comprehensive, phase-gated **AI prompt library** for building production-grade Next.js applications. Each phase contains ready-to-use prompts designed for AI coding assistants (Claude Code, Cursor, GitHub Copilot) that guide you from initial idea to post-launch resilience.
+A comprehensive, phase-gated **AI prompt library** for building production-grade Next.js applications. Each phase contains ready-to-use prompts designed for AI coding assistants (**Google Antigravity**, Claude Code, Cursor, GitHub Copilot) that guide you from initial idea to post-launch resilience.
 
 > **21 phases · 100+ prompts · 2025–2026 stack**
 
@@ -222,7 +222,20 @@ export class AppError extends Error {
 
 ## 🤖 Using with AI Agents
 
-**Claude Code / Cursor / Copilot** — point to a phase file and execute:
+### Google Antigravity (Recommended)
+
+Antigravity's **Planning Mode** with **artifacts** (Implementation Plans, Task Lists, Walkthroughs, Knowledge Items) maps directly to this library's phase structure. See **Prompt 0.10** for the full integration guide.
+
+```
+Read ./phases/PHASE_0_PLANNING__SETUP_Product_Manager_UIUX_Designer.md
+and execute Prompt 0.1 for my project.
+```
+
+Antigravity will automatically produce an Implementation Plan artifact for review before writing code.
+
+### Claude Code / Cursor / Copilot
+
+Point to a phase file and execute:
 
 ```
 Read ./phases/PHASE_0_PLANNING__SETUP_Product_Manager_UIUX_Designer.md

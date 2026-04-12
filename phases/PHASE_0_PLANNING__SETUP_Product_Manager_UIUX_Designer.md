@@ -17,7 +17,7 @@ About me:
 - Goal: [learning / portfolio / actual product]
 
 Tools I plan to use for development:
-- AI-assisted development: Claude Code, Cursor, or GitHub Copilot
+- AI-assisted development: **Google Antigravity**, Claude Code, Cursor, or GitHub Copilot
 - AI-powered UI design: **Google Stitch** (stitch.withgoogle.com), v0.dev
 - UI prototyping: Figma or Excalidraw
 - Project management: Linear, GitHub Projects, or Notion
@@ -355,3 +355,57 @@ Required Output Format: Provide code for:
 - [ ] Run the agent workflow script end-to-end. Verify it creates a project, generates screens, and downloads a ZIP artifact successfully.
 - [ ] Verify Stitch appears as an available MCP tool in your IDE after adding the config.
 - [ ] The extracted `DESIGN.md` matches the visual identity of the generated screens.
+
+---
+
+### Prompt 0.10: Google Antigravity — Artifact-Driven AI Development Workflow
+
+```text
+You are a Development Workflow Architect. Structure this project's AI-assisted development around Google Antigravity's artifact system to maximize transparency, reviewability, and iterative progress.
+
+What is Google Antigravity?
+Antigravity (antigravity.google) is Google's agentic AI coding assistant. It operates in a **Planning Mode** that produces structured artifacts for asynchronous human review, enabling a human-in-the-loop workflow.
+
+Key Artifact Types:
+1. **Implementation Plan** — A detailed technical design document the agent creates before making code changes. It includes proposed file modifications, architectural decisions, and open questions. The user must review and approve ("Proceed") before the agent executes.
+2. **Task List** — A live markdown checklist (`task.md`) tracking research, implementation, and verification steps. Items are marked `[ ]` (pending), `[/]` (in progress), or `[x]` (complete) as work progresses.
+3. **Walkthrough** — A post-execution summary (`walkthrough.md`) documenting what changed, what was tested, and validation results. Includes embedded screenshots and browser recordings.
+4. **Knowledge Items (KIs)** — Persistent memory extracted from conversations. KIs inform future agent responses with project-specific patterns, gotchas, and architectural decisions. Stored in the agent's knowledge directory.
+5. **Browser Recordings** — WebP video captures of browser interactions (UI testing, visual verification) that can be embedded in walkthroughs.
+6. **Screenshots** — Visual captures of UI states for review and comparison.
+
+Workflow Integration with This Prompt Library:
+- When starting a new phase, instruct Antigravity to create an **Implementation Plan** artifact before writing any code.
+- Use the **Task List** artifact to track progress through each phase's prompts (e.g., "Prompt 5.1: ✅, Prompt 5.2: 🔄, Prompt 5.3: ⬜").
+- After completing a phase, instruct Antigravity to produce a **Walkthrough** artifact summarizing deliverables.
+- Leverage **Knowledge Items** to persist cross-phase decisions (e.g., "We chose Better Auth over Clerk because..." or "Our DAL pattern uses...").
+
+Constraints:
+- Always operate in Planning Mode for phases that involve architectural decisions (Phases 0, 1, 3, 4, 8).
+- For execution-heavy phases (Phases 5, 6, 7), toggle to direct execution after the plan is approved.
+- Ensure every Implementation Plan references the specific Phase and Prompt number from this library (e.g., "Implementing Phase 5, Prompt 5.3: URL State Management").
+
+Required Output Format:
+1. An `AGENTS.md` file at the project root defining:
+   - The project's tech stack and conventions
+   - File structure and naming patterns
+   - Which phases are complete and which are in progress
+   - Key architectural decisions for the agent to reference
+2. A phase-tracking table mapping each workflow phase to its artifact status:
+   | Phase | Implementation Plan | Task List | Walkthrough | Status |
+   |-------|-------------------|-----------|-------------|--------|
+   | 0     | ✅ Approved        | ✅ Complete | ✅ Written   | Done   |
+   | 1     | 🔄 In Review       | 🔄 Active  | ⬜ Pending   | Active |
+3. A Knowledge Item seeding strategy: List 5-10 project-specific KIs to create after Phase 0 completes (e.g., "Auth Provider Choice", "Database Schema Conventions", "Component Architecture Patterns").
+
+⚠️ Common Pitfalls:
+- **Pitfall:** Skipping the Implementation Plan and jumping straight to code generation, resulting in misaligned architecture.
+- **Solution:** Always require an approved Implementation Plan before any code changes in architectural phases. Use Antigravity's "Always Proceed" toggle only for trivial tasks.
+- **Pitfall:** Not seeding Knowledge Items early, causing the agent to lose context across conversations.
+- **Solution:** After Phase 0, explicitly instruct the agent to extract and save KIs for tech stack, conventions, and architectural decisions.
+```
+
+✅ **Verification Checklist:**
+- [ ] `AGENTS.md` exists at the project root and is referenced by the AI agent.
+- [ ] Phase-tracking table accurately reflects current progress.
+- [ ] At least 5 Knowledge Items are seeded after completing Phase 0.
