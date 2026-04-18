@@ -1,0 +1,15 @@
+{
+  "_comment": "Stop hook: Audit modified files for console.log statements before session ends",
+  "type": "Stop",
+  "matcher": "",
+  "config": {
+    "hooks": [
+      {
+        "type": "command",
+        "command": "echo '### Console.log Audit' && git diff --name-only HEAD 2>/dev/null | grep -E '\\.(ts|tsx)$' | xargs grep -n 'console\\.log' 2>/dev/null | grep -v '__tests__\\|.test.\\|.spec.' | head -10 && echo 'Remove console.log statements before committing.' || echo 'No console.log found in modified files.'"
+      }
+    ]
+  },
+  "installation": "Add to .claude/settings.json under hooks.Stop[]",
+  "notes": "Scans only modified .ts/.tsx files (excluding test files) for console.log statements. Reports up to 10 occurrences."
+}

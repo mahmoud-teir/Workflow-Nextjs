@@ -271,6 +271,71 @@ Use this table to determine which features are available in your Next.js version
 > 2. **Over-using client components:** Default to Server Components. Only drop `'use client'` down the tree to the specific interactive nodes.
 
 ---
+
+### Prompt 0.11: ECC Agent Harness Setup
+
+```text
+You are a Development Infrastructure Architect. Set up the Everything Claude Code (ECC) agent harness architecture for a new Next.js project to enable machine-executable, agentic development workflows.
+
+What is ECC?
+ECC is a performance optimization architecture for AI agent harnesses. It organizes development knowledge into four layers:
+1. **Skills** — Reusable, domain-specific workflow knowledge (TDD, security review, verification loops).
+2. **Agents** — Specialized subagent definitions with scoped tools and model configurations.
+3. **Hooks** — Automated lifecycle event handlers (format-on-save, type-check-on-edit, security scan).
+4. **Rules** — Mandatory project-wide constraints and coding standards.
+
+These layers are consumed by AI coding agents (Claude Code, Google Antigravity, Cursor) to enforce production-grade quality automatically.
+
+Constraints:
+- Skills MUST use YAML frontmatter for machine-readability.
+- Agents MUST declare `allowed_tools`, `model`, and `trigger` fields.
+- Hooks MUST be JSON templates compatible with `.claude/settings.json`.
+- Rules MUST be organized by domain (`common/`, `typescript/`).
+
+Required Output Format:
+1. Directory structure creation:
+   ```
+   .claude/
+   ├── settings.json         # Hook configurations
+   ├── agents/               # Subagent definitions
+   └── skills/               # Project-specific skills
+   ```
+2. Copy and adapt from the workflow library:
+   - **Required Skills:** `tdd-workflow`, `security-review`, `verification-loop`, `planner-workflow`
+   - **Required Agents:** `planner`, `code-reviewer`, `security-reviewer`, `tdd-guide`
+   - **Required Hooks:** `post-edit-format`, `post-edit-typecheck`, `pre-edit-security-scan`
+   - **Required Rules:** `development-workflow`, `security`, `testing`
+3. A `CLAUDE.md` file at the project root serving as the meta-configuration, referencing:
+   - Project tech stack and conventions
+   - Active skills and agents
+   - Phase tracking table
+4. Integration with the Antigravity artifact system (Implementation Plans, Task Lists, Knowledge Items).
+
+⚠️ Common Pitfalls:
+- **Pitfall:** Installing ALL skills/agents when only a subset is needed, bloating agent context.
+- **Solution:** Start with the 4 required skills and 4 required agents. Add domain-specific ones (e.g., `seo-specialist`, `e2e-runner`) only when reaching the relevant phase.
+- **Pitfall:** Not adapting hook JSON templates to the project's actual tool paths (e.g., `biome` vs `eslint`).
+- **Solution:** Review each hook's `matcher` and `command` fields against the project's `package.json` scripts.
+```
+
+✅ **Verification Checklist:**
+- [ ] `.claude/settings.json` exists and contains valid hook configurations.
+- [ ] `CLAUDE.md` exists at the project root with tech stack and phase tracking.
+- [ ] All required skills have valid YAML frontmatter (parse with `yq` or equivalent).
+- [ ] Running `/planner` in the agent harness correctly invokes the planner subagent.
+
+**📚 ECC Skill References:**
+| Workflow Step | Skill | Agent |
+|---|---|---|
+| Planning | [`planner-workflow`](../skills/planner-workflow/SKILL.md) | [`planner`](../agents/planner.md) |
+| Code Review | [`code-review`](../skills/code-review/SKILL.md) | [`code-reviewer`](../agents/code-reviewer.md) |
+| Security Audit | [`security-review`](../skills/security-review/SKILL.md) | [`security-reviewer`](../agents/security-reviewer.md) |
+| Test-Driven Dev | [`tdd-workflow`](../skills/tdd-workflow/SKILL.md) | [`tdd-guide`](../agents/tdd-guide.md) |
+| Verification | [`verification-loop`](../skills/verification-loop/SKILL.md) | — |
+| Context Management | [`strategic-compact`](../skills/strategic-compact/SKILL.md) | — |
+| Session Persistence | [`session-manager`](../skills/session-manager/SKILL.md) | — |
+
+---
 📎 **Related Phases:**
 - Proceeds to: [Phase 1: Project Structure & Configuration](./PHASE_1_PROJECT_STRUCTURE__CONFIGURATION_Full-Stack_Developer.md)
 

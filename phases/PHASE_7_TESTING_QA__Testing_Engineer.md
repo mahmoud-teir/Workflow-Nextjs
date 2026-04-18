@@ -91,6 +91,53 @@ Required Output Format: Provide complete code and configs for:
 - [ ] Run `k6 run load-test.js` against a local server and observe the 95th percentile (P95) response times.
 
 ---
+
+### 🤖 ECC Agent Harness Integration
+
+This phase is directly supported by the ECC agent harness. Use the following skills and agents to automate testing workflows:
+
+#### Recommended Agent Invocations
+
+| Task | Agent Command | What It Does |
+|---|---|---|
+| Write tests first | `/tdd-guide` | Enforces RED→GREEN→REFACTOR cycle with coverage gates |
+| Run E2E suites | `/e2e-runner` | Executes Playwright specs with failure triage |
+| Verify all gates | `/verify` | Runs the 6-phase verification loop (build, types, lint, test, security, diff) |
+
+#### TDD Workflow Integration
+
+Before writing any feature code in this phase, invoke the **TDD Workflow Skill**:
+
+```text
+Follow the TDD workflow defined in skills/tdd-workflow/SKILL.md:
+
+1. RED Phase — Write a failing test for the behavior described in the user story.
+2. GREEN Phase — Write the MINIMUM code to make the test pass.
+3. REFACTOR Phase — Clean up while keeping all tests green.
+
+Coverage Requirements:
+- Unit tests: ≥80% line coverage on business logic
+- Integration tests: All Server Actions have at least one happy-path and one error-path test
+- E2E tests: Critical user flows (auth, CRUD, payments) have Playwright specs
+
+Use the verification loop (skills/verification-loop/SKILL.md) after each test suite:
+→ `npm run build` → `tsc --noEmit` → `biome check .` → `vitest run` → `npm audit`
+```
+
+#### Automated Hooks Active in This Phase
+
+| Hook | Trigger | Effect |
+|---|---|---|
+| `post-edit-typecheck` | After editing `.ts`/`.tsx` | Auto-runs `tsc --noEmit` to catch type errors |
+| `post-edit-format` | After editing source files | Auto-formats with Biome |
+| `stop-console-log-audit` | Before session ends | Flags leftover `console.log` statements in test files |
+
+**📚 ECC Skill References:**
+- [`tdd-workflow`](../skills/tdd-workflow/SKILL.md) — Complete RED→GREEN→REFACTOR methodology
+- [`verification-loop`](../skills/verification-loop/SKILL.md) — 6-phase quality gate
+- [`code-review`](../skills/code-review/SKILL.md) — Severity-based review for test code quality
+
+---
 📎 **Related Phases:**
 - Prerequisites: [Phase 6: Advanced Features](./PHASE_6_ADVANCED_FEATURES_Full-Stack_Developer.md)
 - Proceeds to: [Phase 8: Security & Automation](./PHASE_8_SECURITY_AUTOMATION_DevSecOps.md)

@@ -1,0 +1,15 @@
+{
+  "_comment": "PreToolUse hook: Scan for hardcoded secrets before file writes",
+  "type": "PreToolUse",
+  "matcher": "Write",
+  "config": {
+    "hooks": [
+      {
+        "type": "command",
+        "command": "echo \"$TOOL_INPUT_CONTENT\" | grep -iE '(sk-[a-zA-Z0-9]{20,}|sk_live_|sk_test_|password\\s*=\\s*[\"'\\'''][^\"'\\''']|AKIA[A-Z0-9]{16})' && echo 'WARNING: Potential secret detected in file content. Review before committing.' || true"
+      }
+    ]
+  },
+  "installation": "Add to .claude/settings.json under hooks.PreToolUse[]",
+  "notes": "Scans write content for common secret patterns: OpenAI keys, Stripe keys, AWS access keys, hardcoded passwords. Non-blocking warning."
+}

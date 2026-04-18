@@ -353,6 +353,132 @@ Required Output Format: A pass/fail smoke test report with screenshots for any f
 - [ ] **Completeness audit:** Zero `TODO` comments, no mock data (`const data = [...]`), no placeholder strings (`"lorem ipsum"`, `"coming soon"`, `"TBD"`), no `href="#"` links, no empty Server Actions, no unimplemented API routes. Every route defined in the sitemap is fully built.
 
 ---
+
+### Prompt 14.11: ECC Full-Stack Verification Gate
+
+```text
+You are a Quality Assurance Architect. Execute the ECC Verification Loop as the final automated quality gate before launch.
+
+The verification loop (skills/verification-loop/SKILL.md) runs 6 sequential gates. ALL must pass before the build is considered launch-ready.
+
+Gate Sequence:
+1. BUILD GATE     → `npm run build` (or `next build`) — must exit 0
+2. TYPE GATE      → `tsc --noEmit` — zero TypeScript errors
+3. LINT GATE      → `biome check .` — zero lint violations
+4. TEST GATE      → `vitest run` — all tests pass, coverage ≥80% on business logic
+5. SECURITY GATE  → `npm audit --audit-level=high` — zero high/critical vulnerabilities
+6. DIFF GATE      → `git diff --stat` — review all uncommitted changes
+
+Constraints:
+- Gates MUST run sequentially. If any gate fails, STOP and report the failure.
+- Do NOT skip a failing gate with `--force` or `|| true`.
+- The verification loop must be run on a clean git state (commit or stash first).
+
+Required Output Format:
+A verification report in this exact format:
+
+## Verification Report — [Project Name]
+| Gate | Command | Status | Duration | Notes |
+|------|---------|--------|----------|-------|
+| Build | `next build` | ✅ PASS / ❌ FAIL | 45s | |
+| Types | `tsc --noEmit` | ✅ PASS / ❌ FAIL | 12s | |
+| Lint | `biome check .` | ✅ PASS / ❌ FAIL | 3s | |
+| Test | `vitest run` | ✅ PASS / ❌ FAIL | 28s | Coverage: 87% |
+| Security | `npm audit` | ✅ PASS / ❌ FAIL | 5s | |
+| Diff | `git diff --stat` | ✅ CLEAN / ⚠️ DIRTY | — | 3 files changed |
+
+**Verdict:** ✅ LAUNCH READY / ❌ BLOCKED (list failures)
+
+⚠️ Common Pitfalls:
+- **Pitfall:** Running the verification loop against `next dev` instead of a production build.
+- **Solution:** Always use `next build` (production mode). Dev mode hides many errors.
+- **Pitfall:** Skipping the security gate because "we'll fix it after launch."
+- **Solution:** High/critical vulnerabilities are LAUNCH BLOCKERS. No exceptions.
+```
+
+✅ **Verification Checklist:**
+- [ ] All 6 gates pass with zero errors.
+- [ ] Verification report is generated and saved to the project repository.
+- [ ] No `--force` flags were used to bypass failures.
+
+---
+
+### Prompt 14.12: Agent-Driven Launch Readiness Orchestration
+
+```text
+You are a Launch Readiness Coordinator. Orchestrate all ECC agents for a comprehensive pre-launch audit.
+
+This prompt coordinates multiple specialized agents to perform a thorough launch readiness check. Each agent focuses on its domain of expertise.
+
+Agent Orchestration Sequence:
+
+1. SECURITY REVIEWER (`/security-reviewer`)
+   → Run the full security review skill
+   → Output: Security audit report (P0/P1/P2 findings)
+   → Blocking if: Any P0 finding exists
+
+2. PERFORMANCE OPTIMIZER (`/performance-optimizer`)
+   → Audit Core Web Vitals, bundle sizes, rendering strategy
+   → Output: Performance report with LCP, FID, CLS scores
+   → Blocking if: Any Core Web Vital fails threshold
+
+3. SEO SPECIALIST (`/seo-specialist`)
+   → Audit metadata, sitemap, robots.txt, structured data
+   → Output: SEO readiness report
+   → Blocking if: Missing metadata on any public page
+
+4. CODE REVIEWER (`/code-reviewer`)
+   → Final code quality pass on recent changes
+   → Output: Code review with severity scoring
+   → Blocking if: Any P0 severity finding
+
+5. VERIFICATION LOOP (`/verify`)
+   → Run the 6-gate verification (build, types, lint, test, security, diff)
+   → Output: Verification report
+   → Blocking if: Any gate fails
+
+Constraints:
+- Agents 1-4 can run in PARALLEL (they don't depend on each other).
+- Agent 5 (verification) runs LAST as the final gate.
+- ALL agents must produce a PASS verdict for the project to be launch-ready.
+- Generate a consolidated Launch Readiness Report combining all agent outputs.
+
+Required Output Format:
+
+## Launch Readiness Report — [Project Name]
+### Agent Results
+| Agent | Domain | Verdict | P0 Findings | Duration |
+|-------|--------|---------|-------------|----------|
+| Security Reviewer | Security | ✅ / ❌ | 0 | 2m |
+| Performance Optimizer | Performance | ✅ / ❌ | 0 | 1m |
+| SEO Specialist | SEO | ✅ / ❌ | 0 | 30s |
+| Code Reviewer | Code Quality | ✅ / ❌ | 0 | 1m |
+| Verification Loop | All Gates | ✅ / ❌ | 0 | 2m |
+
+### Final Verdict
+**✅ LAUNCH APPROVED** — All agents pass, zero P0 findings.
+OR
+**❌ LAUNCH BLOCKED** — [List blocking findings with remediation steps]
+
+### Remediation Queue (if blocked)
+1. [P0 Finding] → [Remediation] → [Assigned Agent]
+```
+
+✅ **Verification Checklist:**
+- [ ] All 5 agents produce a PASS verdict.
+- [ ] Launch Readiness Report is generated and committed to the repository.
+- [ ] Zero P0 findings across all domains.
+
+**📚 ECC Skill References:**
+| Agent | Skill | Purpose |
+|---|---|---|
+| `/security-reviewer` | [`security-review`](../skills/security-review/SKILL.md) | Auth, CSP, env var, input validation audit |
+| `/performance-optimizer` | [`nextjs-patterns`](../skills/nextjs-patterns/SKILL.md) | Server Components, streaming, caching |
+| `/seo-specialist` | [`deployment-patterns`](../skills/deployment-patterns/SKILL.md) | Metadata, sitemap, structured data |
+| `/code-reviewer` | [`code-review`](../skills/code-review/SKILL.md) | Severity-based code quality review |
+| `/verify` | [`verification-loop`](../skills/verification-loop/SKILL.md) | 6-gate quality pipeline |
+
+---
 📎 **Related Phases:**
 - Prerequisites: [Phase 13: Deployment & CI/CD](./PHASE_13_DEPLOYMENT__CICD_DevOps_Engineer.md)
 - Proceeds to: [Phase 15: AI & LLM Integration](./PHASE_15_AI__LLM_INTEGRATION_AI_Engineer.md) (Optional)

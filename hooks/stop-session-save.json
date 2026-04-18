@@ -1,0 +1,15 @@
+{
+  "_comment": "Stop hook: Save session state to a memory file for cross-session persistence",
+  "type": "Stop",
+  "matcher": "",
+  "config": {
+    "hooks": [
+      {
+        "type": "command",
+        "command": "mkdir -p .claude/memory && echo \"## Session ended: $(date -Iseconds)\" >> .claude/memory/session-state.md && echo \"### Git status\" >> .claude/memory/session-state.md && git status --short >> .claude/memory/session-state.md 2>/dev/null && echo \"### Recent commits\" >> .claude/memory/session-state.md && git log --oneline -5 >> .claude/memory/session-state.md 2>/dev/null && echo '---' >> .claude/memory/session-state.md || true"
+      }
+    ]
+  },
+  "installation": "Add to .claude/settings.json under hooks.Stop[]",
+  "notes": "Appends session end timestamp, git status, and recent commits to a persistent memory file. Creates .claude/memory/ if it doesn't exist."
+}

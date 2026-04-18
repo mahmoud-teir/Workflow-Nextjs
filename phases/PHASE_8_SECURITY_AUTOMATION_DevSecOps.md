@@ -83,6 +83,71 @@ Required Output Format: Create a checklist highlighting:
 - [ ] Inspect the network payload of a Server Component returning user data; ensure password hashes and internal IDs are strictly stripped.
 
 ---
+
+### 🤖 ECC Agent Harness Integration
+
+This phase is directly supported by the ECC security layer. The agent harness automates the security patterns described above:
+
+#### Recommended Agent Invocations
+
+| Task | Agent Command | What It Does |
+|---|---|---|
+| Full security audit | `/security-reviewer` | Runs the complete security review skill against the codebase |
+| Code review with security focus | `/code-reviewer --focus security` | Reviews code changes with security-weighted severity scoring |
+| Verify all gates | `/verify` | Runs the 6-phase verification loop including `npm audit` |
+
+#### Security Skill — Automated Checks
+
+The **Security Review Skill** (`skills/security-review/SKILL.md`) automates these Phase 8 concerns:
+
+```text
+The security-reviewer agent performs these checks automatically:
+
+1. SERVER ACTION AUTH AUDIT
+   → Every Server Action: Does it call `auth()` or `getSession()` before any DB operation?
+   → Pattern: auth-first, fail-fast with `redirect('/login')` or throw
+
+2. NEXT_PUBLIC_ EXPOSURE SCAN
+   → Grep all `NEXT_PUBLIC_*` variables → Cross-reference with `.env.example`
+   → Flag any that look like secrets (API keys, tokens, connection strings)
+
+3. INPUT VALIDATION AUDIT
+   → Every Server Action: Does it validate inputs with Zod before processing?
+   → Pattern: `const validated = schema.safeParse(input); if (!validated.success) return { error }`
+
+4. CSP HEADER VERIFICATION
+   → Is `middleware.ts` setting Content-Security-Policy with nonces?
+   → Are `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` set?
+
+5. RATE LIMITING CHECK
+   → Are mutation-heavy endpoints (login, register, payment) rate-limited?
+   → Recommended: Upstash `@upstash/ratelimit` with sliding window
+```
+
+#### Automated Hooks Active in This Phase
+
+| Hook | Trigger | Effect |
+|---|---|---|
+| `pre-edit-security-scan` | Before writing to sensitive paths | Blocks writes containing hardcoded secrets, `eval()`, `dangerouslySetInnerHTML` |
+| `post-edit-typecheck` | After editing `.ts`/`.tsx` | Catches type errors that could create security holes |
+| `stop-console-log-audit` | Before session ends | Flags `console.log` that might leak sensitive data |
+
+#### Security Rules Enforced
+
+The following rules from `rules/common/security.md` and `rules/typescript/security.md` are automatically enforced:
+
+- **No hardcoded secrets** — All sensitive values must come from environment variables
+- **Auth-first Server Actions** — Every mutation must verify session before processing
+- **Zod validation required** — All external inputs must be schema-validated
+- **No `eval()` or `Function()` constructors** — Blocked by the pre-edit hook
+- **No `dangerouslySetInnerHTML` without sanitization** — Flagged by security scan
+
+**📚 ECC Skill References:**
+- [`security-review`](../skills/security-review/SKILL.md) — Complete security audit methodology
+- [`verification-loop`](../skills/verification-loop/SKILL.md) — Includes `npm audit` as Gate 5
+- [`deployment-patterns`](../skills/deployment-patterns/SKILL.md) — Pre-deployment security checklist
+
+---
 📎 **Related Phases:**
 - Prerequisites: [Phase 7: Testing & QA](./PHASE_7_TESTING_QA__Testing_Engineer.md)
 - Proceeds to: [Phase 9: Accessibility & i18n](./PHASE_9_ACCESSIBILITY__INTERNATIONALIZATION_UIUX_Designer_Frontend_Developer.md)
