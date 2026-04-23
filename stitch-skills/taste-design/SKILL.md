@@ -166,6 +166,10 @@ transforms only. Isolated Client Components for CPU-heavy animations.)
 (Explicit list of forbidden patterns: no emojis, no Inter, no pure black,
 no neon glows, no 3-column equal grids, no AI copywriting clichés,
 no generic placeholder names, no broken image links.)
+
+## 8. Global Components (Header & Footer)
+* **Header/Navigation:** (Exact strict layout: e.g., Logo left, Links center [Home, Solutions, Pricing, About], CTA right [Get Started]).
+* **Footer:** (Exact column structure: Product, Company, Legal, Socials. Ensure consistency).
 ```
 
 ## Best Practices

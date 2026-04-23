@@ -9,6 +9,7 @@ model: sonnet
 skills:
   - tdd-workflow
   - verification-loop
+  - karpathy-guidelines
 ---
 
 You are a TDD specialist who writes tests before implementation code.

@@ -46,14 +46,15 @@ A page describing how jules.top tracking works.
 [Copy from .stitch/DESIGN.md Section 6]
 
 **Page Structure:**
-1. Header with navigation
+1. **Global Header:** Logo left. Navigation center (Home, About, Pricing). CTA right.
 2. Explanation of tracking methodology
-3. Footer with links
+3. **Global Footer:** 4 columns of links, copyright text.
 ```
 
 **Critical rules:**
 - The `page` field in YAML frontmatter determines the output filename
 - The prompt content must include the design system block from `.stitch/DESIGN.md`
+- The Header and Footer MUST explicitly list the exact links to ensure consistency across pages
 - You MUST update this file before completing your work to continue the loop
 
 ## Execution Protocol
@@ -132,6 +133,7 @@ Modify `.stitch/SITE.md`:
 
 1. **Decide the next page**: 
    - Check `.stitch/SITE.md` Section 5 (Roadmap) for pending items
+   - **CRITICAL**: Ensure you design all Admin Dashboard / Control Panel screens and subpages. Do not skip the admin panel!
    - If empty, pick from Section 6 (Creative Freedom)
    - Or invent something new that fits the site vision
 2. **Write the baton** with proper YAML frontmatter:
@@ -146,9 +148,10 @@ A competitive achievements page showing developer badges and milestones.
 [Copy the entire design system block from .stitch/DESIGN.md]
 
 **Page Structure:**
-1. Header with title and navigation
+1. **Global Header:** Exact links (Home, Achievements, Leaderboard, Profile).
 2. Badge grid showing unlocked/locked states
 3. Progress bars for milestone tracking
+4. **Global Footer:** Standard site footer links.
 ```
 
 ## File Structure Reference

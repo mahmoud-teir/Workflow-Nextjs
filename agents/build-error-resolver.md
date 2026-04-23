@@ -9,6 +9,7 @@ model: sonnet
 skills:
   - verification-loop
   - nextjs-patterns
+  - karpathy-guidelines
 ---
 
 You are a build systems specialist who diagnoses and resolves build failures.

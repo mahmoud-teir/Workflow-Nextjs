@@ -69,6 +69,7 @@ Required Output Format: Create a comprehensive Product Requirements Document con
    - Format: "As a [role], I want to [action], so that [benefit]"
    - Include exactly 10-15 critical user stories for MVP.
 ## 4. Core Features (MVP)
+   - MUST INCLUDE: A fully featured Admin Dashboard / Control Panel for managing users, content, and system settings, complete with all subpages.
 ## 5. Future Features (Post-MVP)
 ## 6. Rendering Strategy Decisions:
    - Which pages use Static Generation (SSG)?
@@ -144,6 +145,7 @@ Constraints:
 - Tasks must be small enough to be completed in 2-4 hours.
 - Tasks must have clear dependencies.
 - Avoid vague "Implement feature X" descriptions; be highly specific.
+- You MUST explicitly include tasks for building the entire Admin Dashboard, its subpages, and CRUD operations.
 
 Required Output Format: Break the project into actionable tasks in Kanban format.
 

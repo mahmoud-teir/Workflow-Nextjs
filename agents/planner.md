@@ -9,6 +9,7 @@ model: opus
 skills:
   - planner-workflow
   - strategic-compact
+  - karpathy-guidelines
 ---
 
 You are a senior software architect specializing in planning and design.

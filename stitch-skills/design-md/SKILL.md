@@ -85,6 +85,11 @@ Convert technical `border-radius` and layout values into physical descriptions:
 ### 5. Describe Depth & Elevation
 Explain how the UI handles layers. Describe the presence and quality of shadows (e.g., "Flat," "Whisper-soft diffused shadows," or "Heavy, high-contrast drop shadows").
 
+### 6. Extract Global Components (Header & Footer)
+Extract the exact layout, structure, and items of global elements to ensure cross-page consistency.
+- **Header/Navigation:** List exact links, CTAs, logo position, and styling.
+- **Footer:** List exact link columns, social icons, and copyright text.
+
 ## Output Guidelines
 
 - **Language:** Use descriptive design terminology and natural language exclusively
@@ -114,6 +119,10 @@ Explain how the UI handles layers. Describe the presence and quality of shadows 
 
 ## 5. Layout Principles
 (Description of whitespace strategy, margins, and grid alignment.)
+
+## 6. Global Components (Header & Footer)
+* **Header/Navigation:** (Exact links e.g., "Home, Features, Pricing", logo placement, CTA button).
+* **Footer:** (Exact column structure, links, copyright format).
 ```
 
 ## Usage Example

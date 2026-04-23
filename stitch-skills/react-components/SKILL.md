@@ -23,7 +23,9 @@ You are a frontend engineer focused on transforming designs into clean React cod
    - **HTML**: `bash scripts/fetch-stitch.sh "[htmlCode.downloadUrl]" ".stitch/designs/{page}.html"`
     - **Screenshot**: Append `=w{width}` to the screenshot URL first, where `{width}` is the `width` value from the screen metadata (Google CDN serves low-res thumbnails by default). Then run: `bash scripts/fetch-stitch.sh "[screenshot.downloadUrl]=w{width}" ".stitch/designs/{page}.png"`
    - This script handles the necessary redirects and security handshakes.
-5. **Visual audit**: Review the downloaded screenshot (`.stitch/designs/{page}.png`) to confirm design intent and layout details.
+5. **Multimodal Translation (CRITICAL)**: To ensure 100% pixel-perfect translation, you MUST use your multimodal vision capabilities. Open both the downloaded screenshot (`.stitch/designs/{page}.png`) AND the HTML file (`.stitch/designs/{page}.html`), and execute the following internal prompt on yourself:
+   > *"Look at this image. Build me a Next.js App Router application with React components that look exactly like this. Use Tailwind CSS for styling. Extract the exact Tailwind classes and hotlink images directly from the attached HTML."*
+   This guarantees that the generated Next.js components match the visual design perfectly without leaving the editor.
 
 ## Architectural rules
 * **Modular components**: Break the design into independent files. Avoid large, single-file outputs.

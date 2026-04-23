@@ -91,14 +91,14 @@ Add descriptive adjectives to set the mood:
 
 #### C. Structure the Page
 
-Organize content into numbered sections:
+Organize content into numbered sections. **CRITICAL:** For global components like Header and Footer, never use generic terms. You MUST specify the exact links to ensure cross-page consistency.
 
 ```markdown
 **Page Structure:**
-1. **Header:** Navigation with logo and menu items
+1. **Header:** Logo on left. Navigation links center (Home, About, Features, Pricing). CTA right (Get Started).
 2. **Hero Section:** Headline, subtext, and primary CTA
 3. **Content Area:** [Describe the main content]
-4. **Footer:** Links, social icons, copyright
+4. **Footer:** Logo, 4 columns of links (Product, Company, Resources, Legal), Copyright text.
 ```
 
 #### D. Format Colors Properly

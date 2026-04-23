@@ -45,10 +45,10 @@ A competitive, gamified achievements page with terminal aesthetics.
 - Layout: Centered content, max-width container
 
 **Page Structure:**
-1. Header with title "Achievements" and navigation
+1. Global Header: Logo left, Links center (Home, Achievements, Leaderboard), User Profile right.
 2. Badge grid showing locked/unlocked states with icons
 3. Progress section with milestone bars
-4. Footer with links to other pages
+4. Global Footer: Standard 4 columns, copyright text.
 ```
 
 ## Validation Rules
@@ -59,3 +59,5 @@ Before completing an iteration, validate your baton:
 - [ ] Prompt includes the design system block
 - [ ] Prompt describes a page NOT already in `SITE.md` sitemap
 - [ ] Prompt includes specific page structure details
+- [ ] Header and Footer MUST explicitly list the exact links to ensure consistency across pages
+- [ ] Have you built the Admin Dashboard screens yet? If not, prioritize them.

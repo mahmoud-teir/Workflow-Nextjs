@@ -5,6 +5,18 @@
 
 ---
 
+### 🛤️ The Three Design Pathways
+
+Before starting frontend development, ask the user or determine from context which design pathway to follow:
+
+1. **Pathway A (Stitch AI Design):** The user wants to generate the UI using Google Stitch. You will use the `stitch-skills` pipeline to create a `DESIGN.md`, generate HTML via prompts, and convert it to React.
+2. **Pathway B (AI Generative / Code-First):** The user wants YOU (the AI) to build the UI from scratch using your own knowledge of Tailwind v4 and Shadcn, without relying on Stitch. You must still adhere to premium, anti-generic design standards.
+3. **Pathway C (User Provided Design):** The user provides an exact design (e.g., an image, a Figma link, or pre-written HTML). You must bypass generative design and implement the user's design EXACTLY (Pixel-Perfect) using React and Tailwind.
+
+*Note: Always confirm the pathway before generating UI code to avoid wasting context or ignoring the user's provided assets.*
+
+---
+
 ### 🎨 Google Stitch Skills Integration
 
 Before implementing UI components, check if a `stitch-skills/` folder exists at the project root. If it does, **use the following skills as your design pipeline:**
@@ -21,7 +33,7 @@ Before implementing UI components, check if a `stitch-skills/` folder exists at 
 **Workflow:**
 1. If starting from scratch with no design: use `taste-design` to generate a `DESIGN.md`, then `stitch-design` to generate screens.
 2. If you already have Stitch screens: use `design-md` to extract the design system into `DESIGN.md`.
-3. Once you have Stitch HTML: use `react-components` to convert it into modular Next.js components.
+3. Once you have Stitch HTML: use `react-components` to download both the HTML and the Screenshot, and use Multimodal Translation (Vision) to convert it into Pixel-Perfect Next.js components.
 4. Always include the `DESIGN.md` design system block in your Stitch generation prompts for consistency.
 
 > ⚠️ **Anti-AI Design Rule:** The design must NOT look AI-generated. Use `taste-design` to enforce: asymmetric layouts, real data (no fake metrics), no emojis, no `Inter` font, no neon glows, no "3 equal cards" grids, no filler text like "Scroll to explore", no purple/blue neon gradients, no generic names. The result should look like a real, hand-crafted product — not an AI template.
@@ -198,6 +210,65 @@ Required Output Format: Provide complete code/styles for:
 ✅ **Verification Checklist:**
 - [ ] Shrink the browser window horizontally: The layout should fluidly reflow without horizontal scrolling or horizontal text overflow.
 - [ ] Inspect heading fonts: Verify they incrementally scale up/down with the browser window, not just snapping between sizes only at large breakpoint intervals.
+
+---
+
+## ⚠️ Critical Tailwind v4 Gotcha: `@theme` Color Naming Conflicts
+
+> **Rule: Never name `@theme` color variables `--color-base`, `--color-surface`, or `--color-text`.**
+
+### The Bug
+
+In Tailwind v4, every `--color-*` variable defined in `@theme` automatically generates **three** utility classes:
+
+```css
+bg-{name}    /* background-color */
+text-{name}  /* color */
+border-{name} /* border-color */
+```
+
+This means:
+- `--color-base` → generates **`text-base`** (a **color** utility = background color)
+- `--color-surface` → generates **`text-surface`** (a **color** utility)
+- `--color-text` → generates **`text-text`** (harmless but odd)
+
+### Why It's Invisible
+
+Tailwind's built-in `text-base` is a **font-size** utility (`font-size: 1rem`). When you define `--color-base` in `@theme`, Tailwind v4 **overrides** the built-in `text-base` with a **color** utility = `color: var(--bg-base)` = **the page background color** — making any text with `text-base` the same color as the background = invisible.
+
+Additionally, since `text-[#3D2C1E]` and `text-base` both appear in a className string, CSS specificity may resolve to whichever is declared last in the stylesheet — and the `@theme`-generated `text-base` color wins, erasing the explicit color.
+
+### The Fix
+
+```css
+/* ❌ WRONG — generates conflicting text-base, text-surface color utilities */
+@theme {
+  --color-base:    var(--bg-base);
+  --color-surface: var(--bg-surface);
+  --color-text:    var(--text-base);
+}
+
+/* ✅ CORRECT — safe prefixes, no built-in utility conflicts */
+@theme {
+  --color-bg-base:    var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-tx:         var(--text-base);
+  --color-tx-muted:   var(--text-muted);
+  --color-tx-faint:   var(--text-faint);
+}
+```
+
+### Additional Rule: Never use `text-base` for font-size in classNames
+
+When using Tailwind v4, **always use explicit sizes** instead of the `text-base` utility:
+
+```tsx
+{/* ❌ Dangerous — text-base may resolve as a color utility */}
+<a className="text-[#3D2C1E] text-base">...</a>
+
+{/* ✅ Safe — unambiguous font-size */}
+<a className="text-[#3D2C1E] text-[1rem]">...</a>
+```
 
 ---
 📎 **Related Phases:**

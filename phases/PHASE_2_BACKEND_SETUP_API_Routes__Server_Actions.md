@@ -90,6 +90,7 @@ Required Output Format: Provide complete code for:
 2. A user creation action (`app/actions/user.ts`) demonstrating validation and path revalidation (`revalidatePath`).
 3. A client component form (`components/forms/create-user-form.tsx`) integrating the Server Action using React 19's `useActionState` and `useOptimistic`.
 4. Demonstrate background tasks using the Next.js `after()` API (e.g., logging analytics after publishing).
+5. **MUST INCLUDE**: The complete set of Server Actions required for the Admin Dashboard (e.g., managing users, toggling settings, deleting content) with explicit Role-Based Access Control (RBAC) ensuring only Admins can execute them.
 
 ⚠️ Common Pitfalls:
 - **Pitfall:** Throwing raw errors inside a Server Action. They will bubble up to the nearest `error.tsx` barrier, disrupting the UI.

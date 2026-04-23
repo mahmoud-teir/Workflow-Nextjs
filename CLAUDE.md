@@ -24,7 +24,11 @@ workflows/
 │   ├── nextjs-patterns/
 │   ├── deployment-patterns/
 │   ├── session-manager/
-│   └── continuous-learning/
+│   ├── continuous-learning/
+│   ├── karpathy-guidelines/
+│   ├── db-schema-design/
+│   ├── rules-generator/
+│   └── telemetry-integration/
 ├── agents/           # ECC agents — specialized subagent definitions
 │   ├── planner.md
 │   ├── code-reviewer.md
@@ -33,7 +37,10 @@ workflows/
 │   ├── build-error-resolver.md
 │   ├── e2e-runner.md
 │   ├── seo-specialist.md
-│   └── performance-optimizer.md
+│   ├── performance-optimizer.md
+│   ├── db-architect.md
+│   ├── devops-engineer.md
+│   └── api-architect.md
 ├── hooks/            # Lifecycle event handlers (JSON templates)
 │   ├── post-edit-format.json
 │   ├── post-edit-typecheck.json
@@ -42,7 +49,8 @@ workflows/
 │   └── stop-console-log-audit.json
 ├── rules/            # Mandatory project-wide constraints
 │   ├── common/       # Language-agnostic rules
-│   └── typescript/   # TypeScript-specific rules
+│   ├── typescript/   # TypeScript-specific rules
+│   └── security/     # Server Actions security constraints
 ├── docs/             # Guides and reference documentation
 └── stitch-skills/    # Google Stitch design integration
 ```
@@ -59,6 +67,9 @@ workflows/
 | `/e2e-runner` | E2E Runner | Execute and triage Playwright test suites |
 | `/seo-specialist` | SEO Specialist | Metadata, sitemap, structured data audit |
 | `/performance-optimizer` | Performance Optimizer | Core Web Vitals, bundle size, rendering optimization |
+| `/db-architect` | DB Architect | Schema design, indexing, RLS, and migration safety |
+| `/devops` | DevOps Engineer | CI/CD pipelines, Docker, GitHub Actions automation |
+| `/api-architect` | API Architect | Type-safe contracts, Zod schemas, API documentation |
 | `/verify` | — (Skill) | 6-gate verification loop (build→types→lint→test→security→diff) |
 
 ## Core Principles

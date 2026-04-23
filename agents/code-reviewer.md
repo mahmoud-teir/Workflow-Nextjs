@@ -9,6 +9,7 @@ model: sonnet
 skills:
   - code-review
   - verification-loop
+  - karpathy-guidelines
 ---
 
 You are a senior code reviewer ensuring high standards of code quality and security.
