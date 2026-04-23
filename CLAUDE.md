@@ -88,6 +88,7 @@ workflows/
 - Run `tsc --noEmit` before committing
 - Write tests for business logic (≥80% coverage target)
 - Use `<Link>` for internal navigation, `<Image>` for images
+- Include `prisma generate` in `build` and `postinstall` scripts
 
 ### Never
 - Hardcode secrets or API keys in source files

@@ -114,6 +114,7 @@ Required Output Format:
 ✅ **Verification Checklist:**
 - [ ] Run `npm run db:seed`.
 - [ ] Run `npm run db:seed` a second time — no errors and no duplicated baseline data (idempotency check passed).
+- [ ] Verify `package.json` contains `postinstall: prisma generate` and `build: prisma generate && next build`.
 
 ---
 📎 **Related Phases:**

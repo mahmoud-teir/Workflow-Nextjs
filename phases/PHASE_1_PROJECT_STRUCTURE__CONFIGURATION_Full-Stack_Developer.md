@@ -36,7 +36,7 @@ Required Output Format:
    - `app/layout.tsx` & `app/page.tsx`
    - `lib/utils.ts`
    - `components.json` (shadcn)
-   - `package.json`
+   - `package.json` (Must include `postinstall: prisma generate` and `build: prisma generate && next build`)
    - `.gitignore`
    - `biome.json` (or `eslint.config.mjs`)
    - `postcss.config.mjs`

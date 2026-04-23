@@ -28,7 +28,9 @@ Required Output Format: Provide complete code for:
 2. Schema structure (Prisma `.prisma` file or Drizzle schema structure)
 3. Database Client instantiation (`lib/db.ts`) with global singleton to prevent exhausting connections during hot-reloads.
 4. Database health-check utility (`lib/db-health.ts`).
-5. Migration & Setup scripts for `package.json`.
+5. Migration & Setup scripts for `package.json`:
+   - `build`: "prisma generate && next build"
+   - `postinstall`: "prisma generate"
 
 ⚠️ Common Pitfalls:
 - **Pitfall:** Creating a new database connection on every HMR reload in development.

@@ -22,7 +22,8 @@ Ensures smooth, validated deployments from staging to production.
 ### 1. Build Verification
 ```bash
 pnpm build
-# Must succeed with zero errors
+# Must succeed with zero errors. Ensure `prisma generate` is part of the build script 
+# (e.g., "prisma generate && next build") to prevent "Prisma Client not found" errors in production.
 # Check for warnings that indicate potential issues
 ```
 
