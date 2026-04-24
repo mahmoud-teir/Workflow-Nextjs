@@ -5,13 +5,14 @@
 
 ---
 
-### 🛤️ The Three Design Pathways
+### 🛤️ The Four Design Pathways
 
 Before starting frontend development, ask the user or determine from context which design pathway to follow:
 
-1. **Pathway A (Stitch AI Design):** The user wants to generate the UI using Google Stitch. You will use the `stitch-skills` pipeline to create a `DESIGN.md`, generate HTML via prompts, and convert it to React.
-2. **Pathway B (AI Generative / Code-First):** The user wants YOU (the AI) to build the UI from scratch using your own knowledge of Tailwind v4 and Shadcn, without relying on Stitch. You must still adhere to premium, anti-generic design standards.
-3. **Pathway C (User Provided Design):** The user provides an exact design (e.g., an image, a Figma link, or pre-written HTML). You must bypass generative design and implement the user's design EXACTLY (Pixel-Perfect) using React and Tailwind.
+1. **Pathway A (HiFi Prototype-First):** The user completed **Phase 0B** and has an approved prototype. Use the `Prototype → Production Translation Guide` (Prompt 0B.5) as the authoritative component map and design token source. Do NOT redesign — implement the approved prototype.
+2. **Pathway B (Stitch AI Design):** The user wants to generate the UI using Google Stitch. You will use the `stitch-skills` pipeline to create a `DESIGN.md`, generate HTML via prompts, and convert it to React.
+3. **Pathway C (AI Generative / Code-First):** The user wants YOU (the AI) to build the UI from scratch using your own knowledge of Tailwind v4 and Shadcn, without relying on Stitch. You must still adhere to premium, anti-generic design standards.
+4. **Pathway D (User Provided Design):** The user provides an exact design (e.g., an image, a Figma link, or pre-written HTML). You must bypass generative design and implement the user's design EXACTLY (Pixel-Perfect) using React and Tailwind.
 
 *Note: Always confirm the pathway before generating UI code to avoid wasting context or ignoring the user's provided assets.*
 

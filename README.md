@@ -8,7 +8,7 @@
 
 A comprehensive, phase-gated **AI prompt library** enhanced with the **Everything Claude Code (ECC)** agent harness architecture for building production-grade Next.js applications. Each phase contains ready-to-use prompts designed for AI coding assistants (**Google Antigravity**, Claude Code, Cursor, GitHub Copilot) that guide you from initial idea to post-launch resilience.
 
-> **21 phases · 100+ prompts · 10 skills · 8 agents · 5 hooks · 12 rules · 2025–2026 stack**
+> **22 phases · 100+ prompts · 10 skills · 8 agents · 5 hooks · 12 rules · 2025–2026 stack**
 
 ---
 
@@ -97,7 +97,8 @@ workflows/
 ```mermaid
 graph TD
     %% Core Setup
-    A[0: Planning & Setup] --> B[1: Project Structure]
+    A[0: Planning & Setup] --> A2[0B: HiFi Prototype]
+    A2 --> B[1: Project Structure]
     B --> C[2: Backend Setup]
     C --> D[3: Database Models]
     D --> E[4: Authentication]
@@ -129,7 +130,7 @@ graph TD
     classDef phase fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff;
     classDef branch fill:#1e293b,stroke:#a855f7,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
     
-    class A,B,C,D,E,F,G,H,L,M,N,O,P phase;
+    class A,A2,B,C,D,E,F,G,H,L,M,N,O,P phase;
     class I,J,K,Q,R,S,T,U branch;
 ```
 
@@ -161,6 +162,7 @@ Use **Phase 0.8 (Google Stitch)** to generate high-fidelity screens and a `DESIG
 | # | Phase | Role | Description |
 |---|---|---|---|
 | 0 | [Planning & Setup](phases/PHASE_0_PLANNING__SETUP_Product_Manager_UIUX_Designer.md) | Product Manager, UI/UX Designer | Ideation, PRD, tech design, wireframes, **Google Stitch**, design system, **ECC Setup** |
+| 0B | [High-Fidelity Prototype](phases/PHASE_0B_HIGH_FIDELITY_PROTOTYPE_UI_Designer_Frontend_Developer.md) | UI/UX Designer, Frontend Developer | **Claude Design**, v0.dev, interaction states, stakeholder sign-off, prototype→production translation |
 | 1 | [Project Structure & Config](phases/PHASE_1_PROJECT_STRUCTURE__CONFIGURATION_Full-Stack_Developer.md) | Full-Stack Developer | Project init, `next.config.ts`, Biome, Tailwind v4 |
 | 2 | [Backend: API Routes & Server Actions](phases/PHASE_2_BACKEND_SETUP_API_Routes__Server_Actions.md) | Full-Stack Developer | Route Handlers, Server Actions, validation |
 | 3 | [Database Models & Integration](phases/PHASE_3_DATABASE_MODELS__INTEGRATION_Database_Architect.md) | Database Architect | Schema design, Prisma/Drizzle, migrations |
