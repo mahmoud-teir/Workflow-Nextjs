@@ -3,7 +3,7 @@
 
 > **Position in Workflow:** Run this phase **after Phase 0** (PRD + wireframes approved) and **before Phase 1** (project scaffolding). The goal is to produce a clickable, realistic prototype that stakeholders can validate before a single line of production code is written.
 
-> **Tools Covered:** Claude Design (`claude.ai/design`), v0.dev, Vercel AI SDK UI, Framer, and the prototype-to-production translation pipeline.
+> **Tools Covered:** mcp Stitch tool, v0.dev, Vercel AI SDK UI, Framer, and the prototype-to-production translation pipeline.
 
 ---
 
@@ -24,16 +24,16 @@ Catching these answers in a prototype costs **minutes**. Catching them in produc
 
 ```
 Do you need a full, multi-screen interactive flow?
-├── YES → Use Claude Design (Prompt 0B.2) — generates a full React app prototype
+├── YES → Use mcp Stitch tool (Prompt 0B.2) — generates a full React app prototype
 │         Then optionally refine complex components with v0.dev (Prompt 0B.3)
 └── NO, just one complex component →
         Use v0.dev (Prompt 0B.3) directly
 
 Is this prototype for internal dev alignment only?
-├── YES → Claude Design (faster, code-native, no export friction)
+├── YES → mcp Stitch tool (faster, code-native, no export friction)
 └── NO, for external stakeholders/clients →
         Polish in Framer (Prompt 0B.5) for pixel-perfect presentation
-        OR export Claude Design prototype to a hosted URL
+        OR export mcp Stitch tool prototype to a hosted URL
 
 Are you designing a data-heavy dashboard or table?
 └── Add Prompt 0B.4 (Interaction States) — cover all data states explicitly
@@ -86,9 +86,9 @@ Required Output Format:
 
 ---
 
-### Prompt 0B.2: Claude Design — Full Interactive Prototype
+### Prompt 0B.2: mcp Stitch tool — Full Interactive Prototype
 
-> **Tool:** [claude.ai/design](https://claude.ai/design)
+> **Tool:** mcp Stitch tool
 > **What it does:** Generates a fully interactive, multi-screen React prototype from a natural language prompt. Output is real JSX/TSX you can run and hand to developers.
 
 ```text
@@ -369,10 +369,10 @@ Before proceeding to Phase 1 (Project Structure), confirm ALL of the following:
 
 | Tool | URL | Best For | Output |
 |------|-----|----------|--------|
-| **Claude Design** | claude.ai/design | Full multi-screen interactive app prototype | React JSX, runnable immediately |
+| **mcp Stitch tool** | mcp Stitch tool | Full multi-screen interactive app prototype | React JSX, runnable immediately |
 | **v0.dev** | v0.dev | Single complex component iteration | shadcn/ui + Tailwind component |
 | **Google Stitch** | stitch.withgoogle.com | Visual design ideation, `DESIGN.md` generation | HTML screens + design system |
 | **Framer** | framer.com | Client-presentable polished prototype, no-code animation | Hosted prototype URL |
 | **Excalidraw** | excalidraw.com | Quick layout sketches before HiFi | Wireframe export |
 
-> **Avoid using Figma for this phase** unless your team has a dedicated designer with component libraries set up. For AI-assisted development workflows, code-native tools (Claude Design, v0.dev) produce prototype assets that translate directly into Phase 5 without a design-to-code conversion step.
+> **Avoid using Figma for this phase** unless your team has a dedicated designer with component libraries set up. For AI-assisted development workflows, code-native tools (mcp Stitch tool, v0.dev) produce prototype assets that translate directly into Phase 5 without a design-to-code conversion step.
