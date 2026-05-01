@@ -1,0 +1,96 @@
+{
+  "_description": "ECC hook templates for React Native / Expo projects. Copy the relevant hooks object into your project's .claude/settings.json",
+
+  "recommended_hooks": {
+    "PostToolUse": [
+      {
+        "_comment": "Run TypeScript type-check after every file edit",
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx tsc --noEmit --pretty 2>&1 | head -40"
+          }
+        ]
+      },
+      {
+        "_comment": "Run Expo doctor after editing app.json or package.json",
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_TOOL_RESULT\" | grep -q 'app.json\\|package.json\\|eas.json'; then npx expo-doctor 2>&1 | head -20; fi"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "_comment": "Block hardcoded secrets from being written",
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -E '(API_KEY|SECRET|PASSWORD|TOKEN)\\s*=\\s*[\"\\x27][^$\\{]' && echo 'ERROR: Potential secret detected' && exit 1 || exit 0"
+          }
+        ]
+      },
+      {
+        "_comment": "Block AsyncStorage usage for tokens",
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -E 'AsyncStorage\\.setItem.*[Tt]oken|AsyncStorage\\.setItem.*[Pp]assword' && echo 'ERROR: Use expo-secure-store for tokens, not AsyncStorage' && exit 1 || exit 0"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "_comment": "Remind to run verification loop at session end",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '\\n=== Mobile Verification Reminder ===\\nRun before committing:\\n  1. npx tsc --noEmit\\n  2. npm test -- --coverage\\n  3. npx expo-doctor\\n  4. maestro test .maestro/ (if applicable)\\n===================================='"
+          }
+        ]
+      }
+    ]
+  },
+
+  "minimal_hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx tsc --noEmit 2>&1 | head -20"
+          }
+        ]
+      }
+    ]
+  },
+
+  "installation_instructions": {
+    "step_1": "Create .claude/settings.json at your project root",
+    "step_2": "Copy either 'recommended_hooks' or 'minimal_hooks' into the file as the value",
+    "step_3": "Example .claude/settings.json:",
+    "example": {
+      "hooks": {
+        "PostToolUse": [
+          {
+            "matcher": "Edit|Write|MultiEdit",
+            "hooks": [
+              {
+                "type": "command",
+                "command": "npx tsc --noEmit --pretty 2>&1 | head -40"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
