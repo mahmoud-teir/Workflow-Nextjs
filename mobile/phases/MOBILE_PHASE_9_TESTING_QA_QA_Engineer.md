@@ -1,323 +1,209 @@
 <a name="phase-m9"></a>
 # 📌 MOBILE PHASE M9: TESTING & QA (QA Engineer)
 
-> **Testing Stack:** Jest + React Native Testing Library (unit/integration) + Maestro (E2E) — the gold standard for Expo Managed Workflow projects in 2025.
+> **Rule:** Unit tests MUST cover ViewModels and Repositories (JUnit + MockK). UI Tests MUST cover core Composables (Compose Test Rule). E2E Tests MUST cover critical user flows (Maestro).
 
 ---
 
-### Prompt M9.1: Jest + React Native Testing Library Setup
+### Prompt M9.1: ViewModel Unit Testing (JUnit + MockK)
 
 ```text
-You are a React Native QA Automation Lead. Set up Jest + React Native Testing Library (RNTL) for [AppName].
+You are an Android QA Engineer. Write Unit Tests for the ViewModel using MockK and Turbine.
 
-Constraints:
-- Test behaviors, NOT implementation details (no testing state variable names).
-- Mock all native modules (Camera, SecureStore, Haptics, etc.) — they don't run in Node.js.
-- Use `user-event` from RNTL for realistic user interaction simulation.
-- Maintain ≥80% coverage on core business logic (lib/, not components/).
+Requirements:
+- Add test dependencies: `mockk`, `turbine` (for flow testing), and `kotlinx-coroutines-test`.
+- Write a test verifying that `HomeViewModel` emits `isLoading = true`, fetches data, and emits `isLoading = false` with data.
+- Setup the `MainDispatcherRule` to replace the Main thread in unit tests.
 
-Required Output Format: Provide complete code for:
+Required Output Format: Provide complete code for `test/java/.../HomeViewModelTest.kt`:
 
-1. Installation:
-```bash
-npm install --save-dev @testing-library/react-native @testing-library/user-event
-npm install --save-dev jest-expo
-```
+```kotlin
+package com.example.app.ui.features.home
 
-2. `jest.config.js`:
-```javascript
-module.exports = {
-  preset: 'jest-expo',
-  setupFilesAfterFramework: ['<rootDir>/tests/setup.ts'],
-  transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|react-native-reanimated)',
-  ],
-  moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/$1',  // Path alias resolution
-  },
-  coverageThreshold: {
-    global: { branches: 80, functions: 80, lines: 80, statements: 80 },
-  },
+import app.cash.turbine.test
+import com.example.app.domain.model.Item
+import com.example.app.domain.repository.ItemRepository
+import com.example.app.domain.util.Resource
+import io.mockk.coEvery
+import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.*
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Before
+import org.junit.Test
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class HomeViewModelTest {
+
+    private lateinit var viewModel: HomeViewModel
+    private val repository: ItemRepository = mockk()
+    private val testDispatcher = StandardTestDispatcher()
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+        
+        // Default mock behavior
+        coEvery { repository.getItemsFlow() } returns flowOf(emptyList())
+        viewModel = HomeViewModel(repository)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `when data is fetched successfully, state updates with items`() = runTest {
+        // Arrange
+        val mockItems = listOf(Item("1", "Title", "Subtitle"))
+        coEvery { repository.getItemsFlow() } returns flowOf(mockItems)
+        
+        // Re-initialize to trigger the init block with new mock
+        viewModel = HomeViewModel(repository)
+
+        // Act & Assert using Turbine
+        viewModel.uiState.test {
+            val initialState = awaitItem()
+            assertEquals(true, initialState.isLoading)
+            
+            val loadedState = awaitItem()
+            assertEquals(false, loadedState.isLoading)
+            assertEquals(1, loadedState.items.size)
+            assertEquals("Title", loadedState.items[0].title)
+            
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 }
 ```
 
-3. `tests/setup.ts` — Mocks for all native modules:
-```typescript
-import '@testing-library/react-native/extend-expect'
-
-// Mock Expo modules
-jest.mock('expo-secure-store', () => ({
-  getItemAsync: jest.fn().mockResolvedValue(null),
-  setItemAsync: jest.fn().mockResolvedValue(undefined),
-  deleteItemAsync: jest.fn().mockResolvedValue(undefined),
-}))
-
-jest.mock('expo-local-authentication', () => ({
-  hasHardwareAsync: jest.fn().mockResolvedValue(true),
-  isEnrolledAsync: jest.fn().mockResolvedValue(true),
-  authenticateAsync: jest.fn().mockResolvedValue({ success: true }),
-}))
-
-jest.mock('expo-haptics', () => ({
-  impactAsync: jest.fn(),
-  notificationAsync: jest.fn(),
-  selectionAsync: jest.fn(),
-}))
-
-jest.mock('react-native-mmkv', () => ({
-  MMKV: jest.fn().mockImplementation(() => ({
-    set: jest.fn(),
-    getString: jest.fn(),
-    getBoolean: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
-
-jest.mock('@react-native-community/netinfo', () => ({
-  addEventListener: jest.fn(() => jest.fn()),
-  fetch: jest.fn().mockResolvedValue({ isConnected: true, isInternetReachable: true }),
-}))
-
-// Mock react-native-reanimated
-jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock')
-  Reanimated.default.call = () => {}
-  return Reanimated
-})
-```
-
-4. Component test example:
-```typescript
-import { render, screen, userEvent } from '@testing-library/react-native'
-import { Button } from '@/components/ui/Button'
-
-describe('Button', () => {
-  it('renders label text', () => {
-    render(<Button>Click me</Button>)
-    expect(screen.getByText('Click me')).toBeOnTheScreen()
-  })
-
-  it('calls onPress when tapped', async () => {
-    const user = userEvent.setup()
-    const onPress = jest.fn()
-    render(<Button onPress={onPress}>Click me</Button>)
-    await user.press(screen.getByRole('button'))
-    expect(onPress).toHaveBeenCalledTimes(1)
-  })
-
-  it('shows loading spinner and disables press when isLoading', async () => {
-    const user = userEvent.setup()
-    const onPress = jest.fn()
-    render(<Button onPress={onPress} isLoading>Click me</Button>)
-    await user.press(screen.getByRole('button'))
-    expect(onPress).not.toHaveBeenCalled()
-    expect(screen.getByRole('button')).toHaveAccessibilityState({ disabled: true })
-  })
-})
-```
-
-5. Zustand store test:
-```typescript
-import { renderHook, act } from '@testing-library/react-native'
-import { useAuthStore } from '@/lib/store/auth'
-
-describe('AuthStore', () => {
-  beforeEach(() => {
-    useAuthStore.setState({ user: null, isAuthenticated: false })
-  })
-
-  it('sets user and marks authenticated on setUser', () => {
-    const { result } = renderHook(() => useAuthStore())
-    const mockUser = { id: '1', email: 'test@test.com', name: 'Test', role: 'user' as const }
-
-    act(() => result.current.setUser(mockUser))
-
-    expect(result.current.user).toEqual(mockUser)
-    expect(result.current.isAuthenticated).toBe(true)
-  })
-
-  it('clears user and tokens on logout', async () => {
-    const { result } = renderHook(() => useAuthStore())
-    act(() => result.current.setUser({ id: '1', email: 'test@test.com', name: 'Test', role: 'user' }))
-
-    await act(() => result.current.logout())
-
-    expect(result.current.user).toBeNull()
-    expect(result.current.isAuthenticated).toBe(false)
-  })
-})
-```
-
 ⚠️ Common Pitfalls:
-- Pitfall: `Cannot use import statement outside a module` error for Expo packages.
-- Solution: Add the failing package to `transformIgnorePatterns` whitelist in jest.config.js.
-- Pitfall: Reanimated causing `Animated.call is not a function` in tests.
-- Solution: Use `react-native-reanimated/mock` as shown in setup.ts.
+- Pitfall: "Module with the Main dispatcher had failed to initialize" error.
+- Solution: Android's Main thread (Looper) doesn't exist in local JUnit tests. Always use `Dispatchers.setMain()` to inject a TestDispatcher.
 ```
-
-✅ **Verification Checklist:**
-- [ ] `npm test` runs without native module errors.
-- [ ] All secure store mocks intercept real calls.
-- [ ] Button component test passes (render + press + loading state).
-- [ ] Store tests reset state in `beforeEach`.
 
 ---
 
-### Prompt M9.2: Maestro E2E Testing
+### Prompt M9.2: Compose UI Testing
 
 ```text
-You are a Mobile E2E Testing Specialist. Set up Maestro for end-to-end testing of [AppName].
+You are an Android SDET. Write UI Tests for the Jetpack Compose screens.
 
-Why Maestro over Detox?
-- Maestro works with Expo Managed Workflow (no bare workflow needed).
-- YAML-based flows are readable by non-engineers.
-- Much simpler setup — no native configuration required.
-- Cross-platform: same YAML flows run on iOS and Android.
+Requirements:
+- Use `createComposeRule()`.
+- Test that the screen displays a loading spinner when `isLoading` is true.
+- Test that clicking an item fires the correct callback.
 
-Constraints:
-- E2E tests must run against a real build (development build, not Expo Go).
-- Cover critical user flows: auth, core feature loop, logout.
-- Use `data-testid` attributes for element selection.
+Required Output Format: Provide code for `androidTest/java/.../HomeScreenTest.kt`:
 
-Required Output Format: Provide complete Maestro flows for:
+```kotlin
+package com.example.app.ui.features.home
 
-1. Installation:
-```bash
-# macOS / Linux
-curl -Ls "https://get.maestro.mobile.dev" | bash
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createComposeRule
+import com.example.app.domain.model.Item
+import org.junit.Rule
+import org.junit.Test
 
-# Verify
-maestro --version
+class HomeScreenTest {
+
+    @get:Rule
+    val composeTestRule = createComposeRule()
+
+    @Test
+    fun loadingState_showsProgressIndicator() {
+        // Arrange
+        val state = HomeUiState(isLoading = true, items = emptyList())
+
+        // Act
+        composeTestRule.setContent {
+            HomeScreen(uiState = state, onEvent = {}, onNavigateToDetail = {})
+        }
+
+        // Assert
+        // We find the progress indicator by asserting it exists (usually needs a testTag in production)
+        composeTestRule.onNode(isSystemInProgressIndicator()).assertExists()
+        // Or using a tag: composeTestRule.onNodeWithTag("loading_spinner").assertIsDisplayed()
+    }
+
+    @Test
+    fun loadedState_showsItemsAndHandlesClicks() {
+        // Arrange
+        var clickedItemId: String? = null
+        val items = listOf(Item("1", "Test Item", "Desc"))
+        val state = HomeUiState(isLoading = false, items = items)
+
+        // Act
+        composeTestRule.setContent {
+            HomeScreen(
+                uiState = state, 
+                onEvent = {}, 
+                onNavigateToDetail = { clickedItemId = it }
+            )
+        }
+
+        // Assert
+        composeTestRule.onNodeWithText("Test Item").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Test Item").performClick()
+        
+        assert(clickedItemId == "1")
+    }
+}
+
+// Helper matcher for CircularProgressIndicator (which has the ProgressBar semantics)
+fun isSystemInProgressIndicator() = hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)
+```
 ```
 
-2. Auth flow `.maestro/auth_flow.yaml`:
-```yaml
-appId: com.[company].[appname]
 ---
-- launchApp:
-    clearState: true
 
-# Should show login screen
-- assertVisible: "Welcome to [AppName]"
-- assertVisible:
-    id: "email-input"
+### Prompt M9.3: E2E Automation (Maestro)
 
-# Login with test credentials
-- tapOn:
-    id: "email-input"
+```text
+You are an Automation Engineer. Create Maestro flows for the critical user journeys on Android.
+
+Requirements:
+- Create a YAML file targeting the Android `appId`.
+- Create a flow that logs in, navigates to Home, and clicks an item.
+
+Required Output Format: Provide complete code for `.maestro/login_to_home.yaml`:
+
+```yaml
+appId: com.example.app
+---
+- launchApp
+- assertVisible: "Welcome Back"  # Assuming text on screen
+
+# Login Flow
+- tapOn: "Email"
 - inputText: "test@example.com"
-- tapOn:
-    id: "password-input"
-- inputText: "TestPassword123!"
-- tapOn:
-    id: "login-button"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Login"
 
-# Verify successful login
-- waitForAnimationToEnd
+# Verify Home Screen
 - assertVisible: "Home"
-- assertNotVisible: "Welcome to [AppName]"
+- assertVisible: ".*Test Item.*" # Regex match
+
+# Navigate to Detail
+- tapOn: "Test Item"
+- assertVisible: "Item Details"
+- tapOn: "Back" # Using contentDescription for navigation icon
+
+- stopApp
+```
 ```
 
-3. Core feature flow `.maestro/create_post_flow.yaml`:
-```yaml
-appId: com.[company].[appname]
 ---
-- launchApp
-
-# Navigate to create
-- tapOn:
-    id: "create-post-button"
-
-# Fill form
-- tapOn:
-    id: "title-input"
-- inputText: "My Test Post"
-- tapOn:
-    id: "body-input"
-- inputText: "This is the body of my test post with enough content to pass validation."
-
-# Submit
-- tapOn:
-    id: "submit-post-button"
-
-# Wait for success
-- waitForAnimationToEnd
-- assertVisible: "Post created!"
-- assertVisible: "My Test Post"
-```
-
-4. Offline flow `.maestro/offline_flow.yaml`:
-```yaml
-appId: com.[company].[appname]
----
-- launchApp
-
-# Verify offline banner appears when network disabled
-- setAirplaneMode: true
-- waitForAnimationToEnd
-- assertVisible: "You're offline"
-
-# App should still show cached content
-- assertVisible: "Home"
-
-# Restore network
-- setAirplaneMode: false
-- waitForAnimationToEnd
-- assertNotVisible: "You're offline"
-```
-
-5. Running Maestro:
-```bash
-# Run all flows
-maestro test .maestro/
-
-# Run specific flow
-maestro test .maestro/auth_flow.yaml
-
-# Run on iOS Simulator
-maestro test --device-id booted .maestro/auth_flow.yaml
-
-# Run with Maestro Cloud (CI)
-maestro cloud --apiKey $MAESTRO_API_KEY .maestro/
-```
-
-⚠️ Common Pitfalls:
-- Pitfall: Running Maestro against Expo Go — it won't work.
-- Solution: Build a development build with `eas build --profile development --platform ios` first.
-- Pitfall: Maestro can't find elements by text when they're inside complex custom components.
-- Solution: Add `testID` props to all interactive and assertable elements.
-```
 
 ✅ **Verification Checklist:**
-- [ ] `maestro test .maestro/auth_flow.yaml` passes on iOS Simulator.
-- [ ] `maestro test .maestro/auth_flow.yaml` passes on Android Emulator.
-- [ ] Offline flow correctly detects airplane mode and shows banner.
-- [ ] All interactive elements have `testID` attributes.
-
----
-
-### Prompt M9.3: Mobile Testing ECC Integration
-
-```text
-Follow the Mobile TDD workflow:
-
-1. RED Phase — Write a failing Jest test for the feature behavior.
-2. GREEN Phase — Write minimum code to make the test pass.
-3. REFACTOR Phase — Clean up while keeping tests green.
-4. E2E Phase — Write a Maestro flow for the critical user journey.
-
-Coverage Requirements:
-- Unit/Integration tests: ≥80% coverage on lib/ directory
-- E2E: Auth flow + core feature flow + edge case (offline) covered by Maestro
-
-Use the verification loop after each test suite:
-→ `npm test -- --coverage` → `maestro test .maestro/` → `npx tsc --noEmit`
-
-Agent Commands:
-- `/mobile-tdd-guide` — Enforces RED→GREEN→REFACTOR with mobile-specific patterns
-- `/rn-reviewer` — Reviews test code quality and coverage gaps
-- `/verify` — Runs the 5-gate mobile quality pipeline
-```
+- [ ] ViewModel unit tests pass locally without an emulator (`./gradlew testDebugUnitTest`).
+- [ ] Compose UI tests pass on an emulator (`./gradlew connectedDebugAndroidTest`).
+- [ ] Maestro flow successfully executes on a running emulator (`maestro test .maestro/login_to_home.yaml`).
 
 ---
 

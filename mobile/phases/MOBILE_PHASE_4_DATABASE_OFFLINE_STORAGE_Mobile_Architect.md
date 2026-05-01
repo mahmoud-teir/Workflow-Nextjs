@@ -1,363 +1,243 @@
 <a name="phase-m4"></a>
-# 📌 MOBILE PHASE M4: DATABASE & OFFLINE STORAGE (Mobile Architect)
+# 📌 MOBILE PHASE M4: DATABASE & OFFLINE STORAGE (Offline-First Architect)
 
-> **Storage Strategy:** Multiple storage layers for different data types. Never a one-size-fits-all approach.
-
----
-
-## 🗄️ Storage Decision Tree
-
-```
-What type of data?
-├── Sensitive (tokens, passwords, PII) → expo-secure-store (Keychain/Keystore)
-├── Small key-value (preferences, flags, cache) → MMKV (react-native-mmkv)
-├── Structured relational data (offline-first) → Expo SQLite + Drizzle ORM
-├── Large binary files (images, docs) → expo-file-system + Supabase Storage
-└── Complex sync with conflict resolution → WatermelonDB (bare workflow required)
-```
+> **Rule:** Native Android offline storage requires Room Database for relational data and Jetpack DataStore (Preferences) for simple key-value pairs. DO NOT use raw SharedPreferences for new projects.
 
 ---
 
-### Prompt M4.1: Expo SQLite + Drizzle ORM Setup
+### Prompt M4.1: Room Database Setup
 
 ```text
-You are a Mobile Database Architect. Set up Expo SQLite with Drizzle ORM for offline-first data storage.
+You are an Android Offline-First Architect. Set up Room Database for [AppName].
 
-App data model: [describe your main entities from PRD]
-
-Constraints:
-- Use Drizzle ORM (not raw SQL) — type-safe queries, auto-migration.
-- Enable WAL (Write-Ahead Logging) mode for better concurrent read performance.
-- All schema changes must use Drizzle migrations (never `ALTER TABLE` directly).
-- Implement soft deletes (deletedAt timestamp) instead of hard deletes for sync safety.
+Requirements:
+- Define a Room `@Entity` with a client-generated UUID as the primary key.
+- Create a `@Dao` with basic CRUD operations.
+- Expose read operations as Kotlin `Flow<List<T>>` to ensure UI automatically updates when the DB changes.
+- Provide a Dagger Hilt module to inject the DAO.
 
 Required Output Format: Provide complete code for:
 
-1. Installation:
-```bash
-npx expo install expo-sqlite
-npm install drizzle-orm
-npm install --save-dev drizzle-kit
+1. Entity `data/local/entity/ItemEntity.kt`:
+```kotlin
+package com.example.app.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "items")
+data class ItemEntity(
+    @PrimaryKey val id: String, // UUID generated client-side
+    val title: String,
+    val description: String,
+    val createdAt: Long,
+    val syncedAt: Long? = null, // Null if pending sync
+    val isDeleted: Boolean = false // Soft delete for sync
+)
 ```
 
-2. Database client `lib/db/client.ts`:
-```typescript
-import { openDatabaseSync, SQLiteDatabase } from 'expo-sqlite'
-import { drizzle } from 'drizzle-orm/expo-sqlite'
-import * as schema from './schema'
+2. DAO `data/local/dao/ItemDao.kt`:
+```kotlin
+package com.example.app.data.local.dao
 
-const expoDb: SQLiteDatabase = openDatabaseSync('[appname].db', {
-  enableChangeListener: true,  // Enable real-time updates
-})
+import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
-// Enable WAL mode for performance
-expoDb.execSync('PRAGMA journal_mode = WAL;')
-expoDb.execSync('PRAGMA foreign_keys = ON;')
+@Dao
+interface ItemDao {
+    // Flow automatically emits new data whenever the table changes
+    @Query("SELECT * FROM items WHERE isDeleted = 0 ORDER BY createdAt DESC")
+    fun getItems(): Flow<List<ItemEntity>>
 
-export const db = drizzle(expoDb, { schema })
-export type DB = typeof db
-```
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertItem(item: ItemEntity)
 
-3. Schema definition `lib/db/schema.ts`:
-```typescript
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core'
-import { relations } from 'drizzle-orm'
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertItems(items: List<ItemEntity>)
 
-export const users = sqliteTable('users', {
-  id: text('id').primaryKey(),
-  email: text('email').notNull().unique(),
-  name: text('name').notNull(),
-  avatarUrl: text('avatar_url'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
-  syncedAt: integer('synced_at', { mode: 'timestamp' }),  // For sync tracking
-})
-
-export const posts = sqliteTable('posts', {
-  id: text('id').primaryKey(),
-  userId: text('user_id').notNull().references(() => users.id),
-  title: text('title').notNull(),
-  body: text('body').notNull(),
-  status: text('status', { enum: ['draft', 'published', 'archived'] }).notNull().default('draft'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  deletedAt: integer('deleted_at', { mode: 'timestamp' }),  // Soft delete
-  syncedAt: integer('synced_at', { mode: 'timestamp' }),
-})
-
-export const usersRelations = relations(users, ({ many }) => ({
-  posts: many(posts),
-}))
-
-export const postsRelations = relations(posts, ({ one }) => ({
-  user: one(users, { fields: [posts.userId], references: [users.id] }),
-}))
-```
-
-4. Drizzle query examples `lib/db/queries/posts.ts`:
-```typescript
-import { db } from '@/lib/db/client'
-import { posts, users } from '@/lib/db/schema'
-import { eq, desc, isNull, and } from 'drizzle-orm'
-
-// Get all non-deleted posts with user
-export async function getPosts() {
-  return db
-    .select()
-    .from(posts)
-    .leftJoin(users, eq(posts.userId, users.id))
-    .where(isNull(posts.deletedAt))
-    .orderBy(desc(posts.createdAt))
-}
-
-// Create post (generate UUID client-side for offline support)
-export async function createPost(data: NewPost) {
-  const id = generateUUID()
-  await db.insert(posts).values({ ...data, id })
-  return id
-}
-
-// Soft delete
-export async function deletePost(id: string) {
-  await db.update(posts)
-    .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(eq(posts.id, id))
+    // Soft delete
+    @Query("UPDATE items SET isDeleted = 1 WHERE id = :id")
+    suspend fun markAsDeleted(id: String)
+    
+    @Query("SELECT * FROM items WHERE syncedAt IS NULL OR isDeleted = 1")
+    suspend fun getUnsyncedItems(): List<ItemEntity>
 }
 ```
 
-5. Migration setup in `drizzle.config.ts`:
-```typescript
-import { defineConfig } from 'drizzle-kit'
+3. Database Definition `data/local/AppDatabase.kt`:
+```kotlin
+package com.example.app.data.local
 
-export default defineConfig({
-  schema: './lib/db/schema.ts',
-  out: './lib/db/migrations',
-  dialect: 'sqlite',
-  driver: 'expo',
-})
+import androidx.room.Database
+import androidx.room.RoomDatabase
+import com.example.app.data.local.dao.ItemDao
+import com.example.app.data.local.entity.ItemEntity
+
+@Database(
+    entities = [ItemEntity::class],
+    version = 1,
+    exportSchema = true
+)
+abstract class AppDatabase : RoomDatabase() {
+    abstract val itemDao: ItemDao
+}
 ```
 
-6. Run migrations on app start `lib/db/migrate.ts`:
-```typescript
-import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator'
-import { db } from './client'
-import migrations from './migrations/migrations'
+4. Hilt Module `di/DatabaseModule.kt`:
+```kotlin
+package com.example.app.di
 
-export function useDatabaseMigration() {
-  const { success, error } = useMigrations(db, migrations)
-  return { success, error }
+import android.app.Application
+import androidx.room.Room
+import com.example.app.data.local.AppDatabase
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+object DatabaseModule {
+
+    @Provides
+    @Singleton
+    fun provideAppDatabase(app: Application): AppDatabase {
+        return Room.databaseBuilder(
+            app,
+            AppDatabase::class.java,
+            "app_database.db"
+        )
+        // .fallbackToDestructiveMigration() // Use only in early dev
+        .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideItemDao(db: AppDatabase) = db.itemDao
 }
+```
+```
 
-// In app/_layout.tsx:
-const { success: dbReady } = useDatabaseMigration()
-if (!dbReady) return <LoadingScreen />
+---
+
+### Prompt M4.2: Single Source of Truth (Offline-First Repository)
+
+```text
+You are a Data Architect. Implement the "Single Source of Truth" pattern in the Repository.
+
+Requirements:
+- The UI should ONLY observe data from the local Room database (via Flow).
+- The network fetch function should download data, insert it into Room, and return nothing (or just a status).
+- The Room database acts as the single source of truth.
+
+Required Output Format: Provide complete code for `data/repository/ItemRepositoryImpl.kt`:
+
+```kotlin
+package com.example.app.data.repository
+
+import com.example.app.data.local.dao.ItemDao
+import com.example.app.data.remote.ApiService
+import com.example.app.domain.model.Item
+import com.example.app.domain.repository.ItemRepository
+import com.example.app.domain.util.Resource
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+
+class ItemRepositoryImpl @Inject constructor(
+    private val dao: ItemDao,
+    private val api: ApiService
+) : ItemRepository {
+
+    // UI observes this Flow. Automatically updates when local DB changes.
+    override fun getItemsFlow(): Flow<List<Item>> {
+        return dao.getItems().map { entities -> 
+            entities.map { it.toDomainModel() } 
+        }
+    }
+
+    // Call this manually (e.g., Pull-to-refresh) or on a worker
+    override suspend fun refreshItems(): Resource<Unit> {
+        return try {
+            val response = api.getItems()
+            if (response.isSuccessful) {
+                val dtos = response.body() ?: emptyList()
+                // Insert into local DB. This triggers getItemsFlow() to emit.
+                dao.insertItems(dtos.map { it.toEntity() })
+                Resource.Success(Unit)
+            } else {
+                Resource.Error(response.message() ?: "Error")
+            }
+        } catch (e: Exception) {
+            Resource.Error("Sync failed: ${e.message}")
+        }
+    }
+}
 ```
 
 ⚠️ Common Pitfalls:
-- Pitfall: Not enabling WAL mode — concurrent reads block writes on mobile.
-- Solution: Always run `PRAGMA journal_mode = WAL` on database open.
-- Pitfall: Hard-deleting records breaks sync — the server doesn't know what to delete.
-- Solution: Use soft deletes (deletedAt) and sync the deletion event.
+- Pitfall: Returning network data directly to the UI, while also trying to save it to Room. This creates two sources of truth and causes UI synchronization bugs.
+- Solution: The network layer should ONLY write to Room. The UI layer should ONLY read from Room via Flow.
 ```
-
-✅ **Verification Checklist:**
-- [ ] Database opens without errors on both iOS and Android.
-- [ ] `drizzle-kit generate` creates migration files.
-- [ ] Migrations run automatically on app start.
-- [ ] WAL mode enabled (verify with `PRAGMA journal_mode`).
-- [ ] Soft delete pattern implemented on all synced entities.
 
 ---
 
-### Prompt M4.2: MMKV — Fast Key-Value Storage
+### Prompt M4.3: Preferences DataStore (Key-Value)
 
 ```text
-You are a Mobile Storage Engineer. Set up MMKV for ultra-fast key-value storage.
+You are an Android Developer. Implement Jetpack DataStore for user preferences (replacing legacy SharedPreferences).
 
-Use MMKV for: User preferences, feature flags, theme, cached lightweight data, Zustand persistence.
-Do NOT use MMKV for: Sensitive data (use SecureStore), large blobs (use FileSystem), relational data (use SQLite).
+Requirements:
+- Create a DataStore wrapper using Hilt.
+- Expose preferences as Kotlin `Flow`.
+- Store simple things like `isFirstLaunch`, `themePreference`.
 
-Required Output Format: Provide complete code for:
+Required Output Format: Provide complete code for `data/local/SettingsDataStore.kt`:
 
-1. Installation:
-```bash
-npx expo install react-native-mmkv
-```
-⚠️ Requires `expo-build-properties` plugin and a development build (not Expo Go).
+```kotlin
+package com.example.app.data.local
 
-2. MMKV instance `lib/storage/mmkv.ts`:
-```typescript
-import { MMKV } from 'react-native-mmkv'
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.*
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
 
-export const storage = new MMKV({
-  id: 'app-storage',
-  encryptionKey: undefined,  // Set to a key for encrypted storage
-})
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-// Type-safe storage helpers
-export const StorageKeys = {
-  THEME: 'theme',
-  ONBOARDED: 'onboarded',
-  LAST_SYNC: 'last_sync',
-  DRAFT_POST: 'draft_post',
-} as const
+class SettingsDataStore @Inject constructor(private val context: Context) {
 
-type StorageKey = typeof StorageKeys[keyof typeof StorageKeys]
-
-export const appStorage = {
-  getString: (key: StorageKey) => storage.getString(key),
-  setString: (key: StorageKey, value: string) => storage.set(key, value),
-  getBoolean: (key: StorageKey) => storage.getBoolean(key),
-  setBoolean: (key: StorageKey, value: boolean) => storage.set(key, value),
-  delete: (key: StorageKey) => storage.delete(key),
-  getJSON: <T>(key: StorageKey): T | undefined => {
-    const raw = storage.getString(key)
-    return raw ? JSON.parse(raw) : undefined
-  },
-  setJSON: <T>(key: StorageKey, value: T) => storage.set(key, JSON.stringify(value)),
-}
-```
-
-3. Zustand persist with MMKV:
-```typescript
-import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { storage } from '@/lib/storage/mmkv'
-
-const MMKVZustandStorage = {
-  getItem: (name: string) => storage.getString(name) ?? null,
-  setItem: (name: string, value: string) => storage.set(name, value),
-  removeItem: (name: string) => storage.delete(name),
-}
-
-interface UIStore {
-  theme: 'light' | 'dark' | 'system'
-  setTheme: (theme: UIStore['theme']) => void
-}
-
-export const useUIStore = create<UIStore>()(
-  persist(
-    (set) => ({
-      theme: 'system',
-      setTheme: (theme) => set({ theme }),
-    }),
-    {
-      name: 'ui-store',
-      storage: createJSONStorage(() => MMKVZustandStorage),
+    companion object {
+        private val IS_FIRST_LAUNCH = booleanPreferencesKey("is_first_launch")
+        private val THEME_MODE = intPreferencesKey("theme_mode") // 0=Auto, 1=Light, 2=Dark
     }
-  )
-)
-```
-```
 
-✅ **Verification Checklist:**
-- [ ] MMKV reads/writes are synchronous (no async/await needed).
-- [ ] Zustand store persists across app restarts via MMKV.
-- [ ] Development build created (MMKV doesn't work in Expo Go).
+    val isFirstLaunch: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[IS_FIRST_LAUNCH] ?: true
+        }
+
+    suspend fun setFirstLaunchCompleted() {
+        context.dataStore.edit { preferences ->
+            preferences[IS_FIRST_LAUNCH] = false
+        }
+    }
+    
+    // Theme mode flow...
+}
+```
+```
 
 ---
 
-### Prompt M4.3: Offline-First Sync Strategy
-
-```text
-You are a Mobile Offline-First Architecture Specialist. Design the sync strategy for [AppName].
-
-Sync requirement: [describe what needs to sync: posts, messages, user profile, etc.]
-Conflict strategy: [Last-Write-Wins / Operational Transform / Custom business rules]
-
-Required Output Format: Provide complete code for:
-
-1. Sync queue for offline mutations `lib/sync/queue.ts`:
-```typescript
-import { db } from '@/lib/db/client'
-import { syncQueue } from '@/lib/db/schema'
-import { apiClient } from '@/lib/api/client'
-
-export type SyncOperation = {
-  id: string
-  table: string
-  operation: 'create' | 'update' | 'delete'
-  payload: unknown
-  createdAt: Date
-  attempts: number
-}
-
-export async function enqueueSync(op: Omit<SyncOperation, 'id' | 'createdAt' | 'attempts'>) {
-  await db.insert(syncQueue).values({
-    ...op,
-    id: generateUUID(),
-    createdAt: new Date(),
-    attempts: 0,
-    payload: JSON.stringify(op.payload),
-  })
-}
-
-export async function processSyncQueue() {
-  const pending = await db.select().from(syncQueue).orderBy(syncQueue.createdAt)
-
-  for (const item of pending) {
-    try {
-      await apiClient.request({
-        method: item.operation === 'create' ? 'POST' : item.operation === 'update' ? 'PUT' : 'DELETE',
-        url: `/${item.table}/${item.operation !== 'create' ? item.payload.id : ''}`,
-        data: item.payload,
-      })
-      await db.delete(syncQueue).where(eq(syncQueue.id, item.id))
-    } catch {
-      await db.update(syncQueue).set({ attempts: item.attempts + 1 }).where(eq(syncQueue.id, item.id))
-    }
-  }
-}
-```
-
-2. Network status hook `lib/hooks/useNetworkStatus.ts`:
-```typescript
-import NetInfo from '@react-native-community/netinfo'
-import { useEffect, useState } from 'react'
-import { processSyncQueue } from '@/lib/sync/queue'
-
-export function useNetworkStatus() {
-  const [isOnline, setIsOnline] = useState(true)
-
-  useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      const online = state.isConnected && state.isInternetReachable
-      setIsOnline(!!online)
-
-      // Process offline queue when coming back online
-      if (online) processSyncQueue()
-    })
-    return unsubscribe
-  }, [])
-
-  return { isOnline }
-}
-```
-
-3. Offline indicator component:
-```tsx
-export function OfflineBanner() {
-  const { isOnline } = useNetworkStatus()
-
-  if (isOnline) return null
-
-  return (
-    <View className="bg-yellow-500 px-4 py-2 items-center">
-      <Text className="text-white font-medium text-sm">
-        You're offline — changes will sync when reconnected
-      </Text>
-    </View>
-  )
-}
-```
-```
-
 ✅ **Verification Checklist:**
-- [ ] App works fully offline (create, read, update, delete from local SQLite).
-- [ ] Sync queue processes when network restores.
-- [ ] Offline banner appears within 2 seconds of going offline.
-- [ ] No data loss after airplane mode → reconnect cycle.
+- [ ] Room Database compiles without schema errors.
+- [ ] DAOs return `Flow` for reactive UI updates.
+- [ ] The Repository implements the Single Source of Truth pattern (UI only reads from DB).
+- [ ] Jetpack DataStore is configured using the top-level property delegate.
 
 ---
 

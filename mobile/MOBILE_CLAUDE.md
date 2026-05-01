@@ -1,13 +1,13 @@
-# MOBILE_CLAUDE.md — ECC Agent Harness Configuration (Mobile)
+# MOBILE_CLAUDE.md — ECC Agent Harness Configuration (Native Android)
 
-> This file is the meta-configuration for AI coding agents (Google Antigravity, Claude Code, Cursor) for **mobile app development**.
-> It serves as the entry point for understanding the React Native / Expo project structure, conventions, and available automation.
+> This file is the meta-configuration for AI coding agents (Google Antigravity, Claude Code, Cursor) for **Native Android app development**.
+> It serves as the entry point for understanding the Jetpack Compose project structure, conventions, and available automation.
 
 ## Project Overview
 
-This is a **15-phase React Native / Expo mobile development workflow library** enhanced with the **Everything Claude Code (ECC)** agent harness architecture. It provides machine-executable skills, specialized agents, automated hooks, and mandatory rules for production-grade mobile app development targeting iOS and Android.
+This is a **15-phase Native Android development workflow library** enhanced with the **Everything Claude Code (ECC)** agent harness architecture. It provides machine-executable skills, specialized agents, automated hooks, and mandatory rules for production-grade Android app development.
 
-**Tech Stack Context:** Expo SDK 52+ · React Native 0.76+ (New Architecture) · TypeScript · Expo Router 4 · NativeWind v4 · Zustand · TanStack Query · Drizzle ORM · EAS Build
+**Tech Stack Context:** Kotlin · Jetpack Compose (Material 3) · MVVM Architecture · Dagger Hilt · Navigation Compose · Retrofit + Coroutines/Flow · Room Database · Firebase
 
 ## Architecture
 
@@ -15,34 +15,34 @@ This is a **15-phase React Native / Expo mobile development workflow library** e
 mobile/
 ├── MOBILE_README.md      # Main documentation (start here)
 ├── MOBILE_CLAUDE.md      # This file — agent meta-configuration
-├── phases/               # 15-phase mobile development workflow
+├── phases/               # 15-phase Android development workflow
 │   ├── MOBILE_PHASE_0_*  # Planning & Setup
 │   ├── MOBILE_PHASE_0B_* # HiFi Mobile Prototype
-│   ├── MOBILE_PHASE_1_*  # Project Structure
-│   ├── MOBILE_PHASE_2_*  # Navigation Architecture
-│   ├── MOBILE_PHASE_3_*  # Backend & API Integration
-│   ├── MOBILE_PHASE_4_*  # Database & Offline Storage
-│   ├── MOBILE_PHASE_5_*  # Authentication & Security
-│   ├── MOBILE_PHASE_6_*  # UI Components & Design System
-│   ├── MOBILE_PHASE_7_*  # Native Features & APIs
-│   ├── MOBILE_PHASE_8_*  # State Management
-│   ├── MOBILE_PHASE_9_*  # Testing & QA
-│   ├── MOBILE_PHASE_10_* # Performance Optimization
-│   ├── MOBILE_PHASE_11_* # Push Notifications & Analytics
-│   ├── MOBILE_PHASE_12_* # Payments & IAP
-│   ├── MOBILE_PHASE_13_* # CI/CD & Build Pipeline
-│   └── MOBILE_PHASE_14_* # App Store Submission & Launch
+│   ├── MOBILE_PHASE_1_*  # Project Structure & Version Catalogs
+│   ├── MOBILE_PHASE_2_*  # Navigation Compose
+│   ├── MOBILE_PHASE_3_*  # Network (Retrofit/Firebase)
+│   ├── MOBILE_PHASE_4_*  # Database (Room/DataStore)
+│   ├── MOBILE_PHASE_5_*  # Security & Biometrics
+│   ├── MOBILE_PHASE_6_*  # Compose UI & Material 3
+│   ├── MOBILE_PHASE_7_*  # Native APIs (Camera/Location)
+│   ├── MOBILE_PHASE_8_*  # ViewModels & StateFlow
+│   ├── MOBILE_PHASE_9_*  # Testing (JUnit/Compose/Maestro)
+│   ├── MOBILE_PHASE_10_* # Performance & Baseline Profiles
+│   ├── MOBILE_PHASE_11_* # FCM & Analytics
+│   ├── MOBILE_PHASE_12_* # Play Billing / RevenueCat
+│   ├── MOBILE_PHASE_13_* # CI/CD (Fastlane)
+│   └── MOBILE_PHASE_14_* # Play Store Launch
 ├── agents/               # ECC agents — specialized subagent definitions
 │   ├── mobile-planner.md
-│   ├── rn-reviewer.md
+│   ├── compose-reviewer.md
 │   ├── store-specialist.md
 │   ├── mobile-security.md
 │   ├── performance-profiler.md
-│   ├── mobile-tdd-guide.md
-│   └── eas-builder.md
-├── skills/               # ECC skills — reusable mobile workflow knowledge
-│   ├── rn-patterns/
-│   ├── expo-workflow/
+│   ├── compose-tdd-guide.md
+│   └── fastlane-builder.md
+├── skills/               # ECC skills — reusable Android workflow knowledge
+│   ├── compose-patterns/
+│   ├── android-workflow/
 │   ├── store-submission/
 │   ├── mobile-security/
 │   ├── offline-first/
@@ -50,95 +50,54 @@ mobile/
 │   ├── mobile-performance/
 │   └── mobile-verification-loop/
 └── hooks/                # Lifecycle event handlers (JSON templates)
-    ├── post-edit-typecheck.json
     ├── post-edit-lint.json
     ├── pre-commit-security.json
-    ├── stop-session-save.json
-    └── stop-console-audit.json
+    └── stop-session-save.json
 ```
 
 ## Agent Quick Reference
 
 | Command | Agent | Purpose |
 |---------|-------|---------|
-| `/mobile-planner` | Mobile Planner | Structured task decomposition for mobile features |
-| `/rn-reviewer` | RN Reviewer | React Native code quality with mobile-specific patterns |
-| `/store-specialist` | Store Specialist | App Store & Play Store submission automation |
-| `/mobile-security` | Mobile Security | SecureStore, biometrics, certificate pinning audit |
-| `/performance-profiler` | Perf Profiler | FPS profiling, memory leaks, bundle size analysis |
-| `/mobile-tdd-guide` | Mobile TDD Guide | Jest + RNTL + Maestro TDD workflow |
-| `/eas-builder` | EAS Builder | EAS Build/Submit pipeline automation |
-| `/verify` | — (Skill) | 5-gate mobile verification loop |
+| `/mobile-planner` | Mobile Planner | Structured task decomposition for Android features |
+| `/compose-reviewer` | Compose Reviewer | Jetpack Compose code quality & recomposition checks |
+| `/store-specialist` | Store Specialist | Google Play Store submission automation |
+| `/mobile-security` | Mobile Security | EncryptedSharedPreferences, OWASP Top 10 |
+| `/performance-profiler` | Perf Profiler | Baseline Profiles, R8 rules, LazyColumn analysis |
+| `/compose-tdd-guide` | Compose TDD Guide | JUnit + Compose Test Rule + Maestro TDD workflow |
+| `/fastlane-builder` | Fastlane Builder | Fastlane / GitHub Actions pipeline automation |
+| `/verify` | — (Skill) | 5-gate Android verification loop (detekt, ktlint, tests) |
 
 ## Core Principles
 
-1. **New Architecture First** — Use Fabric renderer + JSI; avoid legacy bridge patterns
-2. **Platform Parity** — Test on real iOS and Android devices before every release
-3. **Offline-First** — Assume network is unreliable; design for offline gracefully
-4. **Performance Budget** — 60fps animations; <3s cold start; <50MB initial JS bundle
-5. **Security by Default** — Never store sensitive data in AsyncStorage; use Keychain/SecureStore
-6. **Test-Driven** — Write tests before implementation; Maestro E2E covers critical flows
+1. **Unidirectional Data Flow (UDF)** — State flows down, events flow up.
+2. **ViewModel Hygiene** — ViewModels never know about the View or Context. Use `SavedStateHandle`.
+3. **Compose Performance** — Avoid unstable parameters. Use `remember` and `collectAsStateWithLifecycle`.
+4. **Offline-First** — Repository pattern handles local DB (Room) vs remote network fetching.
+5. **Security by Default** — Never use raw SharedPreferences for tokens; use EncryptedSharedPreferences.
+6. **Main-Safety** — Suspend functions must be safe to call from the Main thread (use `withContext(Dispatchers.IO)`).
 
 ## Rules Summary
 
 ### Always
-- Use `expo-secure-store` for sensitive data (tokens, credentials), never `AsyncStorage`
-- Validate all API responses with Zod schemas before storing in state
-- Use `useSharedValue` + `useAnimatedStyle` for animations (runs on UI thread, no JS bridge)
-- Wrap navigation calls in try/catch; handle deep link edge cases
-- Use `data-testid` attributes on every interactive element for Maestro selectors
-- Test on physical devices before submitting to App Store / Play Store
-- Use `expo-image` instead of RN's built-in `Image` for better caching and performance
+- Use `collectAsStateWithLifecycle()` when collecting flows in Compose to avoid background resource leaks.
+- Pass plain data classes and lambdas to Composables, NOT ViewModels.
+- Run heavy data operations or DB queries in `Dispatchers.IO`.
+- Use Dagger Hilt for Dependency Injection (`@HiltViewModel`, `@AndroidEntryPoint`).
+- Use Version Catalogs (`libs.versions.toml`) for dependency management.
+- Provide `contentDescription` for all meaningful Images/Icons for accessibility.
 
 ### Never
-- Hardcode API keys or secrets in source files or `app.json`
-- Use `AsyncStorage` for sensitive data (tokens, PII) — use `expo-secure-store`
-- Use `ScrollView` for long lists — use `FlashList` or `FlatList` with `keyExtractor`
-- Commit `.env` files; use `EAS Secrets` for CI/CD environment variables
-- Use `console.log` in production builds (use `expo-constants` to guard dev-only logging)
-- Use `TouchableOpacity` from core RN — prefer `Pressable` or gesture-handler `TouchableOpacity`
-
-## Hook Configuration
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      { "matcher": "Edit|Write", "command": "npx tsc --noEmit --pretty 2>&1 | head -50" },
-      { "matcher": "Edit|Write", "command": "npx expo-doctor 2>&1 | head -20" }
-    ],
-    "PreToolUse": [
-      { "matcher": "Edit|Write", "command": "grep -nE '(API_KEY|SECRET|PASSWORD)\\s*=' ${file} && exit 1 || exit 0" }
-    ]
-  }
-}
-```
-
-## Phase Tracking
-
-| Phase | Name | ECC Integration | Status |
-|-------|------|-----------------|--------|
-| M0 | Planning & Setup | Prompt M0.8 (ECC Setup) | ✅ |
-| M0B | HiFi Mobile Prototype | Stitch MCP (MOBILE device type) | ✅ |
-| M1 | Project Structure | Rules + Patterns | ✅ |
-| M2 | Navigation | RN Patterns Skill | ✅ |
-| M3 | Backend & API | API Patterns + Zod | ✅ |
-| M4 | Database & Offline | Offline-First Skill | ✅ |
-| M5 | Authentication | Mobile Security Skill | ✅ |
-| M6 | UI Components | RN Patterns Skill | ✅ |
-| M7 | Native Features | Native APIs | ✅ |
-| M8 | State Management | Zustand + TanStack | ✅ |
-| M9 | Testing & QA | Mobile Testing Skill | ✅ |
-| M10 | Performance | Mobile Perf Skill | ✅ |
-| M11 | Notifications & Analytics | PostHog / Firebase | ✅ |
-| M12 | Payments & IAP | RevenueCat + StoreKit 2 | ✅ |
-| M13 | CI/CD | EAS Builder Agent | ✅ |
-| M14 | App Store Launch | Store Specialist Agent | ✅ |
+- Never pass `Context` into ViewModels. If absolutely needed, use `@ApplicationContext`.
+- Never perform network or database operations on the UI thread.
+- Never use legacy Android Views unless absolutely necessary (Interop).
+- Never hardcode strings or dimensions; use `stringResource` and `dimensionResource`.
+- Never put API keys in code repository. Use `local.properties` or CI secrets.
 
 ## Getting Started
 
-1. Clone this repository alongside your Expo project
-2. Follow **Phase M0, Prompt M0.8** to set up the ECC agent harness
-3. Copy required skills and agents to your `.claude/` directory
-4. Activate hooks in `.claude/settings.json`
-5. Start with `/mobile-planner` to decompose your first milestone
+1. Start a new Android Studio project with "Empty Compose Activity".
+2. Follow **Phase M0, Prompt M0.8** to set up the ECC agent harness.
+3. Copy required skills and agents to your `.claude/` directory.
+4. Activate hooks in `.claude/settings.json`.
+5. Start with `/mobile-planner` to decompose your first milestone.

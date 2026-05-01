@@ -1,359 +1,243 @@
 <a name="phase-m6"></a>
-# 📌 MOBILE PHASE M6: UI COMPONENTS & DESIGN SYSTEM (Frontend Developer)
+# 📌 MOBILE PHASE M6: UI COMPONENTS & DESIGN SYSTEM (UI Engineer)
 
-> **Styling:** NativeWind v4 (Tailwind CSS for React Native) is the recommended approach. Tamagui is the alternative for maximum performance.
-
----
-
-## 🎨 Design Pathways (same as web — adapted for mobile)
-
-1. **Pathway A (Prototype-First):** Phase M0B prototype is the reference. Implement pixel-perfect.
-2. **Pathway B (Stitch AI Design):** Use Google Stitch MCP with `deviceType: MOBILE` to generate screens, then translate to RN components.
-3. **Pathway C (Code-First):** AI generates components from `MOBILE_DESIGN.md` design tokens.
-4. **Pathway D (User-Provided):** User provides Figma designs or images — implement exactly.
-
-> ⚠️ **Anti-Generic Design Rule:** Mobile UIs must NOT look like AI-generated templates. No Inter font with pure white backgrounds. No "3 equal cards" grids. No emojis in headers. The result must feel like a real, hand-crafted native product.
+> **Rule:** Use Material Design 3 (`androidx.compose.material3`). Never hardcode hex colors or text sizes directly in Modifiers; always use `MaterialTheme.colorScheme` and `MaterialTheme.typography`.
 
 ---
 
-### Prompt M6.1: Core UI Component Library
+### Prompt M6.1: Compose Theme Setup (Material 3)
 
 ```text
-You are a Lead React Native Design System Engineer. Build the foundational UI component library for [AppName].
+You are a Lead Compose UI Engineer. Define the Jetpack Compose Material 3 theme for [AppName].
 
-Design System: [Reference MOBILE_DESIGN.md tokens]
-Styling: NativeWind v4
-Platform: [iOS / Android / Both]
-
-Constraints:
-- Every interactive component MUST meet ≥44pt (iOS) / ≥48dp (Android) touch target.
-- All components MUST support dark mode via `useColorScheme()`.
-- Use `Pressable` instead of `TouchableOpacity` for all interactive elements.
-- Never use hardcoded colors — always reference design tokens.
-- Animations MUST use Reanimated 3 (not the deprecated `Animated` API).
-- Support `accessibilityLabel`, `accessibilityRole`, and `accessibilityHint` on all interactive elements.
+Requirements:
+- Define Light and Dark color schemes.
+- Define a custom Typography scale using a Google Font (e.g., via `google-fonts` provider or bundled TTF).
+- Provide the main `AppTheme` composable wrapper.
 
 Required Output Format: Provide complete code for:
 
-1. `components/ui/Text.tsx` — Typography component:
-```tsx
-import { Text as RNText, TextProps } from 'react-native'
-import { cn } from '@/lib/utils/cn'
+1. Colors `ui/theme/Color.kt`:
+```kotlin
+package com.example.app.ui.theme
 
-const variants = {
-  display: 'text-[34px] font-bold leading-[40px] tracking-tight',
-  h1: 'text-[28px] font-bold leading-[34px]',
-  h2: 'text-[22px] font-semibold leading-[28px]',
-  body: 'text-[17px] font-normal leading-[24px]',
-  caption: 'text-[13px] font-normal leading-[18px]',
-  label: 'text-[15px] font-medium leading-[20px]',
-} as const
+import androidx.compose.ui.graphics.Color
 
-interface AppTextProps extends TextProps {
-  variant?: keyof typeof variants
-  color?: 'primary' | 'secondary' | 'muted' | 'error' | 'success'
-}
+val PrimaryLight = Color(0xFF0061A4)
+val OnPrimaryLight = Color(0xFFFFFFFF)
+val PrimaryContainerLight = Color(0xFFD1E4FF)
+// ... define rest of M3 tokens
 
-export function Text({ variant = 'body', color = 'primary', className, ...props }: AppTextProps) {
-  const colorClass = {
-    primary: 'text-gray-900 dark:text-gray-50',
-    secondary: 'text-gray-700 dark:text-gray-300',
-    muted: 'text-gray-500 dark:text-gray-400',
-    error: 'text-red-600 dark:text-red-400',
-    success: 'text-green-600 dark:text-green-400',
-  }[color]
-
-  return (
-    <RNText
-      className={cn(variants[variant], colorClass, className)}
-      {...props}
-    />
-  )
-}
+val PrimaryDark = Color(0xFF9ECAFF)
+val OnPrimaryDark = Color(0xFF003258)
+val PrimaryContainerDark = Color(0xFF00497D)
+// ... define rest of M3 tokens
 ```
 
-2. `components/ui/Button.tsx` — Primary button with Reanimated 3:
-```tsx
-import { Pressable, View, ActivityIndicator } from 'react-native'
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated'
-import { Text } from './Text'
-import { cn } from '@/lib/utils/cn'
+2. Theme `ui/theme/Theme.kt`:
+```kotlin
+package com.example.app.ui.theme
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
+import android.app.Activity
+import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
-const variants = {
-  primary: 'bg-primary active:bg-primary-dark',
-  secondary: 'bg-gray-100 dark:bg-gray-800 active:bg-gray-200',
-  destructive: 'bg-red-600 active:bg-red-700',
-  ghost: 'bg-transparent',
-  outline: 'border border-gray-300 dark:border-gray-600 bg-transparent',
-} as const
+private val LightColorScheme = lightColorScheme(
+    primary = PrimaryLight,
+    onPrimary = OnPrimaryLight,
+    primaryContainer = PrimaryContainerLight,
+    // ...
+)
 
-const sizes = {
-  sm: { container: 'h-8 px-3 rounded-lg', text: 'text-[13px]' },
-  md: { container: 'h-11 px-5 rounded-xl', text: 'text-[15px]' },  // 44pt iOS minimum
-  lg: { container: 'h-14 px-6 rounded-2xl', text: 'text-[17px]' },
-} as const
+private val DarkColorScheme = darkColorScheme(
+    primary = PrimaryDark,
+    onPrimary = OnPrimaryDark,
+    primaryContainer = PrimaryContainerDark,
+    // ...
+)
 
-interface ButtonProps {
-  variant?: keyof typeof variants
-  size?: keyof typeof sizes
-  onPress?: () => void
-  isLoading?: boolean
-  isDisabled?: boolean
-  children: React.ReactNode
-  className?: string
-}
+@Composable
+fun AppTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = false, // Set true to allow Android 12+ wallpaper colors
+    content: @Composable () -> Unit
+) {
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
+    
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = colorScheme.background.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
+    }
 
-export function Button({
-  variant = 'primary',
-  size = 'md',
-  onPress,
-  isLoading = false,
-  isDisabled = false,
-  children,
-  className,
-}: ButtonProps) {
-  const scale = useSharedValue(1)
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withTiming(scale.value, { duration: 100 }) }],
-  }))
-
-  return (
-    <AnimatedPressable
-      style={animStyle}
-      onPressIn={() => { scale.value = 0.96 }}
-      onPressOut={() => { scale.value = 1 }}
-      onPress={isDisabled || isLoading ? undefined : onPress}
-      accessibilityRole="button"
-      accessibilityState={{ disabled: isDisabled || isLoading }}
-      className={cn(
-        'items-center justify-center flex-row gap-2',
-        variants[variant],
-        sizes[size].container,
-        (isDisabled || isLoading) && 'opacity-50',
-        className,
-      )}
-    >
-      {isLoading && <ActivityIndicator size="small" color="white" />}
-      <Text variant="label" className={cn(sizes[size].text, variant === 'primary' && 'text-white')}>
-        {children}
-      </Text>
-    </AnimatedPressable>
-  )
-}
-```
-
-3. `components/ui/Input.tsx` — Form input:
-```tsx
-import { TextInput, TextInputProps, View } from 'react-native'
-import { useRef } from 'react'
-import { Text } from './Text'
-
-interface InputProps extends TextInputProps {
-  label?: string
-  error?: string
-  hint?: string
-  leftIcon?: React.ReactNode
-  rightIcon?: React.ReactNode
-}
-
-export function Input({ label, error, hint, leftIcon, rightIcon, className, ...props }: InputProps) {
-  return (
-    <View className="gap-1.5">
-      {label && <Text variant="label" color="secondary">{label}</Text>}
-      <View className={cn(
-        'flex-row items-center h-12 px-4 rounded-xl border',  // 48dp height
-        'bg-white dark:bg-gray-900',
-        error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600',
-        'focus-within:border-primary',
-      )}>
-        {leftIcon}
-        <TextInput
-          className="flex-1 text-[17px] text-gray-900 dark:text-gray-50"
-          placeholderTextColor="#9CA3AF"
-          accessibilityLabel={label}
-          {...props}
-        />
-        {rightIcon}
-      </View>
-      {error && <Text variant="caption" color="error">{error}</Text>}
-      {!error && hint && <Text variant="caption" color="muted">{hint}</Text>}
-    </View>
-  )
-}
-```
-
-4. `components/ui/Card.tsx` — Surface card:
-```tsx
-import { View, ViewProps, Platform, StyleSheet } from 'react-native'
-import { cn } from '@/lib/utils/cn'
-
-interface CardProps extends ViewProps {
-  elevated?: boolean
-}
-
-export function Card({ elevated = true, className, style, ...props }: CardProps) {
-  return (
-    <View
-      className={cn('bg-white dark:bg-gray-900 rounded-2xl overflow-hidden', className)}
-      style={[elevated && styles.shadow, style]}
-      {...props}
-    />
-  )
-}
-
-const styles = StyleSheet.create({
-  shadow: Platform.select({
-    ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-    android: { elevation: 3 },
-  })!,
-})
-```
-
-5. `components/ui/Skeleton.tsx` — Content loading placeholder:
-```tsx
-import { View } from 'react-native'
-import { MotiView } from 'moti'  // npm install moti
-
-export function Skeleton({ width, height, borderRadius = 8, className }: {
-  width: number | string
-  height: number
-  borderRadius?: number
-  className?: string
-}) {
-  return (
-    <MotiView
-      from={{ opacity: 0.3 }}
-      animate={{ opacity: 0.8 }}
-      transition={{ type: 'timing', duration: 800, loop: true, repeatReverse: true }}
-      style={{ width, height, borderRadius }}
-      className={cn('bg-gray-200 dark:bg-gray-700', className)}
-    />
-  )
-}
-
-// Usage: <Skeleton width="100%" height={80} />
-```
-```
-
-✅ **Verification Checklist:**
-- [ ] All button touch targets are ≥44pt height.
-- [ ] Dark mode colors render correctly without brightness inversion.
-- [ ] Button scale animation plays smoothly at 60fps.
-- [ ] Input shows error state in red border + red text below.
-- [ ] Skeleton pulses at correct speed without JS thread blocking.
-
----
-
-### Prompt M6.2: Reanimated 3 — Animation Patterns
-
-```text
-You are a React Native Animation Expert. Implement production-grade animations for [AppName].
-
-Rules:
-- ALL animations must run on the UI thread (Reanimated 3 worklets).
-- NEVER use the legacy `Animated` API for new code.
-- Respect `AccessibilityInfo.isReduceMotionEnabled()` — skip animations if true.
-
-Required Output Format: Provide complete code for:
-
-1. Fade + slide entrance animation:
-```tsx
-import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated'
-
-// Entering prop — auto animates on mount
-<Animated.View entering={FadeInDown.delay(100).duration(400).springify()}>
-  <Card>...</Card>
-</Animated.View>
-```
-
-2. Shared element transition (React Native 0.76+ New Architecture):
-```tsx
-import { SharedTransition, withSpring } from 'react-native-reanimated'
-
-const customTransition = SharedTransition.custom((values) => {
-  'worklet'
-  return {
-    width: withSpring(values.targetWidth),
-    height: withSpring(values.targetHeight),
-  }
-})
-
-// On list screen:
-<Animated.Image sharedTransitionTag={`product-image-${id}`} source={...} />
-
-// On detail screen:
-<Animated.Image sharedTransitionTag={`product-image-${id}`} source={...} />
-```
-
-3. Gesture-driven swipe-to-delete:
-```tsx
-import { Swipeable } from 'react-native-gesture-handler'
-import Animated, { useAnimatedStyle, interpolate, runOnJS } from 'react-native-reanimated'
-
-export function SwipeableRow({ onDelete, children }: SwipeableRowProps) {
-  const renderRightAction = (progress: Animated.SharedValue<number>) => {
-    const animStyle = useAnimatedStyle(() => ({
-      opacity: interpolate(progress.value, [0, 1], [0, 1]),
-      transform: [{ translateX: interpolate(progress.value, [0, 1], [80, 0]) }],
-    }))
-
-    return (
-      <Animated.View style={animStyle} className="bg-red-500 justify-center px-5">
-        <Text className="text-white font-semibold">Delete</Text>
-      </Animated.View>
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = Typography,
+        content = content
     )
-  }
-
-  return (
-    <Swipeable renderRightActions={renderRightAction} onSwipeableOpen={() => onDelete()}>
-      {children}
-    </Swipeable>
-  )
 }
 ```
 
-4. Pull-to-refresh with custom animation:
-```tsx
-import { RefreshControl, ScrollView } from 'react-native'
-import { useState, useCallback } from 'react'
+⚠️ Common Pitfalls:
+- Pitfall: Forgetting to update the Status Bar color to match the Compose theme background.
+- Solution: The `SideEffect` block with `WindowCompat` handles this gracefully.
+```
 
-export function RefreshableScrollView({ onRefresh, children }: Props) {
-  const [refreshing, setRefreshing] = useState(false)
+---
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await onRefresh()
-    setRefreshing(false)
-  }, [onRefresh])
+### Prompt M6.2: Core UI Components
 
-  return (
-    <ScrollView
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor="#6366F1"       // iOS spinner color
-          colors={['#6366F1']}       // Android spinner colors
-        />
-      }
-    >
-      {children}
-    </ScrollView>
-  )
+```text
+You are a Compose UI Specialist. Create 3 reusable core components using Material 3.
+
+Components to create:
+1. `PrimaryButton` — wraps `Button` with standard padding and a loading state.
+2. `AppTextField` — wraps `OutlinedTextField` with error state handling and standard styling.
+3. `EmptyStateView` — a reusable component for lists with no data (Icon + Text + Action Button).
+
+Required Output Format: Provide complete code for `ui/components/CoreComponents.kt`:
+
+```kotlin
+package com.example.app.ui.components
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+
+@Composable
+fun PrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+    enabled: Boolean = true
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(48.dp),
+        enabled = enabled && !isLoading
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text(text = text)
+        }
+    }
+}
+
+@Composable
+fun AppTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    errorMessage: String? = null
+) {
+    Column(modifier = modifier) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            isError = errorMessage != null,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
+    }
+}
+// Add EmptyStateView similarly...
+```
+```
+
+---
+
+### Prompt M6.3: Compose Animations
+
+```text
+You are an Android Animation Expert. Implement a standard transition and a layout animation in Compose.
+
+Requirements:
+- Create an `AnimatedVisibility` wrapper for items entering/exiting a list.
+- Show how to animate a state change (e.g., a color transitioning smoothly).
+
+Required Output Format: Provide code snippets demonstrating:
+
+```kotlin
+// 1. Enter / Exit Animations (e.g., for a Toast or Card)
+@Composable
+fun FadingCard(visible: Boolean) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        Card { /* Content */ }
+    }
+}
+
+// 2. State-driven Animation
+@Composable
+fun ToggleHeart(isLiked: Boolean, onToggle: () -> Unit) {
+    // Animates color smoothly when state changes
+    val tint by animateColorAsState(
+        targetValue = if (isLiked) Color.Red else Color.Gray,
+        label = "heartColor"
+    )
+    
+    IconButton(onClick = onToggle) {
+        Icon(Icons.Default.Favorite, contentDescription = null, tint = tint)
+    }
 }
 ```
+
+⚠️ Common Pitfalls:
+- Pitfall: Triggering animations inside the View layer based on transient events instead of State.
+- Solution: Compose animations are driven by State variables. Always declare a state (`val visible by ...`) and use `animate*AsState` or `AnimatedVisibility`.
 ```
+
+---
 
 ✅ **Verification Checklist:**
-- [ ] All animations run at 60fps (verify with Flipper or React DevTools Profiler).
-- [ ] Animations disabled when `AccessibilityInfo.isReduceMotionEnabled()` returns true.
-- [ ] Swipe-to-delete requires a deliberate swipe (not accidental tap).
-- [ ] Pull-to-refresh completes and updates data visibly.
+- [ ] Dark mode and Light mode switch correctly based on system settings.
+- [ ] Status bar color matches the theme background.
+- [ ] `PrimaryButton` shows a spinner when `isLoading = true` and is unclickable.
+- [ ] Animations use `animateXAsState` rather than legacy View Property Animators.
 
 ---
 
 📎 **Related Phases:**
-- Prerequisites: [Phase M5: Authentication](./MOBILE_PHASE_5_AUTHENTICATION_SECURITY_Security_Expert.md)
-- Proceeds to: [Phase M7: Native Features](./MOBILE_PHASE_7_NATIVE_FEATURES_APIs_Mobile_Developer.md)
+- Prerequisites: [Phase M5: Security](./MOBILE_PHASE_5_AUTHENTICATION_SECURITY_Security_Expert.md)
+- Proceeds to: [Phase M7: Native Features & APIs](./MOBILE_PHASE_7_NATIVE_FEATURES_APIs_Android_Developer.md)

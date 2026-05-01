@@ -1,344 +1,275 @@
 <a name="phase-m7"></a>
-# 📌 MOBILE PHASE M7: NATIVE FEATURES & APIs (Mobile Developer)
+# 📌 MOBILE PHASE M7: NATIVE FEATURES & APIs (Android Developer)
 
-> **Key Principle:** Always request permissions at the moment they are needed — NEVER at app launch. Always handle the "denied" state gracefully.
+> **Rule:** All dangerous permissions MUST be requested at runtime using the `ActivityResultContracts` API. Never request permissions on app launch. Provide a rationale before requesting.
 
 ---
 
-### Prompt M7.1: Camera & Media
+### Prompt M7.1: Permissions Flow (Accompanist / ActivityResult)
 
 ```text
-You are a React Native Native Features Engineer. Implement camera and media access for [AppName].
+You are an Android Developer. Implement a reusable permission flow for [AppName].
 
-Features needed: [Photo capture / Video recording / QR scanner / Image picker from gallery]
-
-Constraints:
-- Request camera permission only when the user initiates a camera action.
-- Provide a custom pre-permission explanation screen before the native dialog.
-- Handle the "permanently denied" state (guide users to Settings).
-- Compress images before upload (mobile cameras produce 5-20MB images).
-- Support both iOS and Android camera conventions.
+Requirements:
+- Use `rememberLauncherForActivityResult` with `RequestPermission` or `RequestMultiplePermissions`.
+- Handle the rationale dialog (showing *why* the app needs the permission before the OS prompt).
+- Handle the "Permanently Denied" state (redirect to Settings).
 
 Required Output Format: Provide complete code for:
 
-1. Installation:
-```bash
-npx expo install expo-camera expo-image-picker expo-media-library
-```
+1. Permission Wrapper Composable `ui/components/PermissionRequest.kt`:
+```kotlin
+package com.example.app.ui.components
 
-2. Permission handling pattern (reusable):
-```typescript
-// lib/native/permissions.ts
-import { Alert, Linking } from 'react-native'
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 
-export async function requestPermissionWithFallback(
-  requestFn: () => Promise<{ status: string }>,
-  permissionName: string,
-): Promise<boolean> {
-  const { status } = await requestFn()
+@Composable
+fun PermissionRequester(
+    permission: String,
+    rationaleTitle: String,
+    rationaleMessage: String,
+    onGranted: () -> Unit,
+    content: @Composable (requestPermission: () -> Unit) -> Unit
+) {
+    val context = LocalContext.current
+    var showRationale by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
 
-  if (status === 'granted') return true
-
-  if (status === 'denied') {
-    Alert.alert(
-      `${permissionName} Required`,
-      `Please enable ${permissionName} access in Settings to use this feature.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Open Settings', onPress: () => Linking.openSettings() },
-      ]
-    )
-  }
-
-  return false
-}
-```
-
-3. Image picker with compression:
-```tsx
-import * as ImagePicker from 'expo-image-picker'
-import * as ImageManipulator from 'expo-image-manipulator'
-
-export async function pickAndCompressImage(): Promise<string | null> {
-  const granted = await requestPermissionWithFallback(
-    ImagePicker.requestMediaLibraryPermissionsAsync,
-    'Photo Library'
-  )
-  if (!granted) return null
-
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: true,
-    aspect: [1, 1],
-    quality: 1,  // Keep original — we compress manually
-  })
-
-  if (result.canceled) return null
-  const uri = result.assets[0].uri
-
-  // Compress to max 1MB
-  const compressed = await ImageManipulator.manipulateAsync(uri, [], {
-    compress: 0.7,
-    format: ImageManipulator.SaveFormat.JPEG,
-  })
-
-  return compressed.uri
-}
-```
-
-4. QR Code scanner:
-```tsx
-import { CameraView, useCameraPermissions } from 'expo-camera'
-import { useState } from 'react'
-
-export function QRScanner({ onScan }: { onScan: (data: string) => void }) {
-  const [permission, requestPermission] = useCameraPermissions()
-  const [scanned, setScanned] = useState(false)
-
-  if (!permission?.granted) {
-    return (
-      <View className="flex-1 items-center justify-center gap-4">
-        <Text>Camera access is needed to scan QR codes</Text>
-        <Button onPress={requestPermission}>Allow Camera</Button>
-      </View>
-    )
-  }
-
-  return (
-    <CameraView
-      style={{ flex: 1 }}
-      facing="back"
-      barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-      onBarcodeScanned={({ data }) => {
-        if (!scanned) {
-          setScanned(true)
-          onScan(data)
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            onGranted()
+        } else {
+            // If denied but shouldn't show rationale, they permanently denied it
+            showSettingsDialog = true
         }
-      }}
-    />
-  )
-}
-```
-
-5. `app.json` permission strings (required for App Store review):
-```json
-{
-  "expo": {
-    "ios": {
-      "infoPlist": {
-        "NSCameraUsageDescription": "Allow [AppName] to take photos for your profile and posts.",
-        "NSPhotoLibraryUsageDescription": "Allow [AppName] to select photos from your library.",
-        "NSPhotoLibraryAddUsageDescription": "Allow [AppName] to save photos to your library.",
-        "NSMicrophoneUsageDescription": "Allow [AppName] to record audio for videos."
-      }
     }
-  }
+
+    if (showRationale) {
+        AlertDialog(
+            onDismissRequest = { showRationale = false },
+            title = { Text(rationaleTitle) },
+            text = { Text(rationaleMessage) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showRationale = false
+                    launcher.launch(permission)
+                }) { Text("Allow") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRationale = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (showSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showSettingsDialog = false },
+            title = { Text("Permission Required") },
+            text = { Text("You have permanently denied this permission. Please enable it in Settings.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showSettingsDialog = false
+                    context.openAppSettings()
+                }) { Text("Open Settings") }
+            }
+        )
+    }
+
+    content {
+        // Provide the trigger back to the caller
+        showRationale = true
+    }
+}
+
+fun Context.openAppSettings() {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        data = Uri.fromParts("package", packageName, null)
+    }
+    startActivity(intent)
 }
 ```
 
 ⚠️ Common Pitfalls:
-- Pitfall: Not providing permission description strings — Apple rejects the build.
-- Solution: Every permission usage must have a corresponding NSXxxUsageDescription.
-- Pitfall: Not handling the case where the user taps "Don't Allow" twice (permanently denied on iOS).
-- Solution: Check permission status, and if `status === 'denied'`, show Settings deep link.
+- Pitfall: Requesting permissions directly without showing a rationale first.
+- Solution: Always explain *why* you need the permission in your own UI before triggering the OS dialog. OS dialogs cannot be triggered repeatedly if denied.
 ```
-
-✅ **Verification Checklist:**
-- [ ] Camera permission prompts at the moment of use (not app launch).
-- [ ] "Permanently denied" state shows "Open Settings" alert.
-- [ ] Image compression reduces file size to <1MB.
-- [ ] QR scanner stops scanning after first successful read.
-- [ ] All `NSXxxUsageDescription` strings are in app.json.
 
 ---
 
-### Prompt M7.2: Location Services
+### Prompt M7.2: CameraX Integration
 
 ```text
-You are a React Native Location Services Engineer. Implement location features for [AppName].
+You are an Android Developer. Implement a custom Camera view using CameraX in Compose.
 
-Location features needed: [Map display / User location / Geofencing / Background location]
+Requirements:
+- Use `androidx.camera:camera-camera2` and `camera-view`.
+- Implement a `PreviewView` inside an `AndroidView` composable.
+- Provide a capture button that takes a photo and saves it to a temporary file.
 
-Constraints:
-- Request ONLY "When in Use" location permission unless background is strictly required.
-- Apple and Google BOTH require strong justification for background location — use it sparingly.
-- Show a custom explanation screen before the native permission dialog.
-- On iOS 14+, request "Precise" vs "Approximate" location deliberately.
+Required Output Format: Provide complete code for `ui/features/camera/CameraScreen.kt`:
 
-Required Output Format: Provide complete code for:
+```kotlin
+package com.example.app.ui.features.camera
 
-1. Installation:
-```bash
-npx expo install expo-location react-native-maps
-```
+import android.content.Context
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import java.io.File
+import java.util.concurrent.Executor
 
-2. Location permission + current position:
-```typescript
-import * as Location from 'expo-location'
+@Composable
+fun CameraScreen(onPhotoCaptured: (File) -> Unit) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
 
-export async function getCurrentLocation(): Promise<Location.LocationObject | null> {
-  const { status } = await Location.requestForegroundPermissionsAsync()
-  if (status !== 'granted') return null
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            factory = { ctx ->
+                val previewView = PreviewView(ctx)
+                val executor = ContextCompat.getMainExecutor(ctx)
+                
+                cameraProviderFuture.addListener({
+                    val cameraProvider = cameraProviderFuture.get()
+                    val preview = Preview.Builder().build().also {
+                        it.setSurfaceProvider(previewView.surfaceProvider)
+                    }
 
-  return Location.getCurrentPositionAsync({
-    accuracy: Location.Accuracy.Balanced,  // Balance accuracy vs battery
-    timeInterval: 10000,
-    distanceInterval: 50,
-  })
-}
+                    imageCapture = ImageCapture.Builder().build()
 
-export function useUserLocation() {
-  const [location, setLocation] = useState<Location.LocationObject | null>(null)
-  const [error, setError] = useState<string | null>(null)
+                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
-  useEffect(() => {
-    let subscriber: Location.LocationSubscription | null = null
+                    try {
+                        cameraProvider.unbindAll()
+                        cameraProvider.bindToLifecycle(
+                            lifecycleOwner, cameraSelector, preview, imageCapture
+                        )
+                    } catch (exc: Exception) {
+                        // Handle binding failure
+                    }
+                }, executor)
+                
+                previewView
+            },
+            modifier = Modifier.fillMaxSize()
+        )
 
-    Location.requestForegroundPermissionsAsync().then(({ status }) => {
-      if (status !== 'granted') {
-        setError('Location permission denied')
-        return
-      }
-      Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, timeInterval: 5000 },
-        (loc) => setLocation(loc)
-      ).then((sub) => { subscriber = sub })
-    })
-
-    return () => { subscriber?.remove() }
-  }, [])
-
-  return { location, error }
-}
-```
-
-3. Map with user location:
-```tsx
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
-import { useUserLocation } from '@/lib/hooks/useLocation'
-import { Platform } from 'react-native'
-
-export function AppMap() {
-  const { location } = useUserLocation()
-
-  return (
-    <MapView
-      style={{ flex: 1 }}
-      provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-      showsUserLocation
-      showsMyLocationButton={false}  // Custom button instead
-      initialRegion={{
-        latitude: location?.coords.latitude ?? 37.7749,
-        longitude: location?.coords.longitude ?? -122.4194,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      }}
-    />
-  )
-}
-```
-
-4. `app.json` location permission strings:
-```json
-{
-  "expo": {
-    "ios": {
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Allow [AppName] to show nearby [items] on the map.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow [AppName] to track your [activity] in the background."
-      }
+        Button(
+            onClick = { 
+                takePhoto(context, imageCapture, ContextCompat.getMainExecutor(context), onPhotoCaptured) 
+            },
+            modifier = Modifier.align(Alignment.BottomCenter).padding(32.dp)
+        ) {
+            Text("Capture")
+        }
     }
-  }
+}
+
+private fun takePhoto(
+    context: Context,
+    imageCapture: ImageCapture?,
+    executor: Executor,
+    onPhotoCaptured: (File) -> Unit
+) {
+    val photoFile = File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
+    val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+
+    imageCapture?.takePicture(
+        outputOptions, executor,
+        object : ImageCapture.OnImageSavedCallback {
+            override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                onPhotoCaptured(photoFile)
+            }
+            override fun onError(exc: ImageCaptureException) {
+                // Handle error
+            }
+        }
+    )
 }
 ```
 ```
-
-✅ **Verification Checklist:**
-- [ ] Location requested only on screens that need it.
-- [ ] Map renders correctly with user's real location.
-- [ ] Permission denied state shows helpful explanation.
-- [ ] Background location (if used) has strong App Store justification.
 
 ---
 
-### Prompt M7.3: Haptics & System Integration
+### Prompt M7.3: Haptic Feedback & Platform APIs
 
 ```text
-You are a Mobile UX Engineer. Implement haptic feedback and system integrations for [AppName].
+You are a Compose Developer. Implement Compose-native Haptic Feedback and system Share intents.
 
-Haptics enhance touch interactions — they are a key differentiator between a native app and a web wrapper.
+Required Output Format: Provide code snippets for:
 
-Required Output Format: Provide complete code for:
+1. Haptic Feedback (Vibration):
+```kotlin
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 
-1. Haptic feedback utility `lib/native/haptics.ts`:
-```typescript
-import * as Haptics from 'expo-haptics'
-
-export const haptics = {
-  // Light — for UI interactions (button taps, toggles)
-  light: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
-  // Medium — for confirmations (save, submit)
-  medium: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
-  // Heavy — for destructive actions (delete, error)
-  heavy: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy),
-  // Success — for completed actions
-  success: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
-  // Error — for failures
-  error: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error),
-  // Warning
-  warning: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning),
-  // Selection — for picker/list selection
-  selection: () => Haptics.selectionAsync(),
+@Composable
+fun HapticButton() {
+    val haptic = LocalHapticFeedback.current
+    Button(onClick = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        // do action
+    }) { Text("Long Press Me") }
 }
 ```
 
-2. Share API:
-```typescript
-import { Share, Platform } from 'react-native'
+2. Native Share Sheet:
+```kotlin
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 
-export async function shareContent(title: string, url: string, message?: string) {
-  await Share.share(
-    Platform.select({
-      ios: { url, title, message },
-      android: { message: `${message ?? title}\n${url}` },
-    })!
-  )
-}
-```
-
-3. Clipboard:
-```typescript
-import * as Clipboard from 'expo-clipboard'
-
-export async function copyToClipboard(text: string) {
-  await Clipboard.setStringAsync(text)
-  haptics.success()
-  // Show toast: "Copied to clipboard"
-}
-```
-
-4. Barcode generation (for sharing codes):
-```bash
-npm install react-native-qrcode-svg react-native-svg
-```
-```tsx
-import QRCode from 'react-native-qrcode-svg'
-
-export function ShareQR({ value }: { value: string }) {
-  return (
-    <View className="items-center p-6 bg-white rounded-2xl">
-      <QRCode value={value} size={200} color="#000000" backgroundColor="transparent" />
-    </View>
-  )
+@Composable
+fun ShareButton(textToShare: String) {
+    val context = LocalContext.current
+    
+    Button(onClick = {
+        val sendIntent: Intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, textToShare)
+            type = "text/plain"
+        }
+        val shareIntent = Intent.createChooser(sendIntent, null)
+        context.startActivity(shareIntent)
+    }) { Text("Share") }
 }
 ```
 ```
+
+---
 
 ✅ **Verification Checklist:**
-- [ ] Haptics fire on button press (heavy devices feel the difference).
-- [ ] Share sheet opens correctly on iOS and Android.
-- [ ] Clipboard copy shows success toast.
-- [ ] Haptics disabled gracefully on devices without haptic engines.
+- [ ] Denying a permission shows the Rationale Dialog on next attempt.
+- [ ] Selecting "Don't ask again" handles gracefully (navigates to Settings).
+- [ ] CameraX preview displays correctly without rotation/stretching issues.
+- [ ] `AndroidView` correctly ties into Compose Lifecycle (`LocalLifecycleOwner`).
 
 ---
 

@@ -1,346 +1,224 @@
 <a name="phase-m2"></a>
-# 📌 MOBILE PHASE M2: NAVIGATION ARCHITECTURE (Mobile Developer)
+# 📌 MOBILE PHASE M2: NAVIGATION ARCHITECTURE (Android Architect)
 
-> **Navigation Framework:** Expo Router 4 (file-based routing — recommended) with React Navigation 7 primitives under the hood.
+> **Core Philosophy:** Android Navigation in Compose should be Type-Safe (using `kotlinx.serialization`). Avoid string-based routes whenever possible. Use a Single Activity architecture.
 
 ---
 
-### Prompt M2.1: Expo Router — Core Navigation Structure
+### Prompt M2.1: Type-Safe Navigation Setup
 
 ```text
-You are a Senior React Native Navigation Architect. Implement the complete navigation architecture for [AppName] using Expo Router 4.
+You are an Android Navigation Expert. Implement the core Navigation Compose architecture for [AppName] using type-safe routing.
 
-App Structure (from Phase M0.5 wireframes):
-- [List your screens and navigation hierarchy here]
-
-Platform: [iOS / Android / Both]
-
-Constraints:
-- Use Expo Router 4 file-based routing exclusively.
-- Enable TypeScript typed routes (`"typedRoutes": true` in app.json `experiments`).
-- Auth-gated routes must redirect unauthenticated users using Expo Router's `<Redirect>`.
-- Deep links must work for: [list any deep-linkable screens].
-- Tab bar must have ≤5 items (iOS HIG recommendation).
+Requirements:
+- Use `kotlinx.serialization` for route definitions.
+- Implement a `NavHost` inside the main layout.
+- Separate navigation into graphs (e.g., AuthGraph, MainGraph).
+- Provide a `BottomNavigationBar` setup that syncs with the current destination.
 
 Required Output Format: Provide complete code for:
 
-1. Root `app/_layout.tsx` — Auth state check + provider setup:
-```tsx
-import { Stack, Redirect } from 'expo-router'
-import { useAuthStore } from '@/lib/store/auth'
+1. Route definitions `ui/navigation/Routes.kt`:
+```kotlin
+package com.example.app.ui.navigation
 
-export default function RootLayout() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+import kotlinx.serialization.Serializable
 
-  return (
-    <Stack>
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    </Stack>
-  )
+sealed class Route {
+    @Serializable data object AuthGraph : Route()
+    @Serializable data object Login : Route()
+    @Serializable data object Register : Route()
+
+    @Serializable data object MainGraph : Route()
+    @Serializable data object Home : Route()
+    @Serializable data object Search : Route()
+    @Serializable data object Profile : Route()
+    @Serializable data class ItemDetail(val itemId: String) : Route()
 }
 ```
 
-2. Auth stack `app/(auth)/_layout.tsx`:
-```tsx
-import { Stack } from 'expo-router'
-import { useAuthStore } from '@/lib/store/auth'
-import { Redirect } from 'expo-router'
+2. Main Navigation Component `ui/navigation/AppNavigation.kt`:
+```kotlin
+package com.example.app.ui.navigation
 
-export default function AuthLayout() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  if (isAuthenticated) return <Redirect href="/(tabs)" />
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 
-  return <Stack screenOptions={{ headerShown: false }} />
-}
-```
-
-3. Tab navigator `app/(tabs)/_layout.tsx`:
-```tsx
-import { Tabs } from 'expo-router'
-import { useColorScheme } from '@/lib/hooks/useColorScheme'
-import { Home, Search, PlusCircle, Bell, User } from 'lucide-react-native'
-
-export default function TabLayout() {
-  const { colorScheme } = useColorScheme()
-  const isDark = colorScheme === 'dark'
-
-  return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: isDark ? '#FFFFFF' : '#000000',
-        tabBarStyle: {
-          backgroundColor: isDark ? '#0f0f0f' : '#ffffff',
-          borderTopWidth: 0,
-          elevation: 0,
-        },
-      }}
-    >
-      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: ({ color }) => <Home size={24} color={color} /> }} />
-      <Tabs.Screen name="explore" options={{ title: 'Explore', tabBarIcon: ({ color }) => <Search size={24} color={color} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color }) => <User size={24} color={color} /> }} />
-    </Tabs>
-  )
-}
-```
-
-4. Dynamic route with typed params `app/(tabs)/[id].tsx`:
-```tsx
-import { useLocalSearchParams, router } from 'expo-router'
-
-type Params = { id: string }
-
-export default function DetailScreen() {
-  const { id } = useLocalSearchParams<Params>()
-
-  return (
-    // ...
-  )
-}
-```
-
-5. Programmatic navigation patterns:
-```tsx
-import { router } from 'expo-router'
-
-// Push (adds to stack)
-router.push('/detail/123')
-
-// Replace (replaces current, no back)
-router.replace('/(tabs)')
-
-// Go back
-router.back()
-
-// Navigate with params
-router.push({ pathname: '/detail/[id]', params: { id: '123' } })
-
-// Navigate to modal
-router.push('/modal/settings')
-```
-
-⚠️ Common Pitfalls:
-- Pitfall: Using `useRouter().push()` with a hardcoded string like `/home` — no type safety.
-- Solution: Enable `typedRoutes: true` in app.json and use the generated types.
-- Pitfall: Nested navigators causing double headers.
-- Solution: Set `headerShown: false` on the outer layout when using nested Stack.
-```
-
-✅ **Verification Checklist:**
-- [ ] Auth guard redirects unauthenticated users to `(auth)/login`.
-- [ ] Authenticated users are redirected away from auth screens.
-- [ ] Tab bar renders correctly on both iOS and Android.
-- [ ] Deep link `[scheme]://[route]` opens the correct screen.
-- [ ] TypeScript catches invalid route strings.
-
----
-
-### Prompt M2.2: Deep Links & Universal Links
-
-```text
-You are a Mobile Deep Link Architect. Implement deep link handling for [AppName].
-
-Deep links required:
-- [scheme]://home → Home screen
-- [scheme]://product/[id] → Product detail
-- [scheme]://reset-password?token=[token] → Password reset
-- https://[domain].com/share/[id] → Universal link (iOS) / App Link (Android)
-
-Required Output Format: Provide complete implementation for:
-
-1. `app.json` scheme configuration:
-```json
-{
-  "expo": {
-    "scheme": "[appscheme]",
-    "ios": {
-      "associatedDomains": ["applinks:[domain].com"]
-    },
-    "android": {
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [{ "scheme": "https", "host": "[domain].com" }],
-          "category": ["BROWSABLE", "DEFAULT"]
+@Composable
+fun AppNavigation(
+    modifier: Modifier = Modifier,
+    navController: NavHostController = rememberNavController()
+) {
+    NavHost(
+        navController = navController,
+        startDestination = Route.AuthGraph,
+        modifier = modifier
+    ) {
+        // Auth Graph
+        navigation<Route.AuthGraph>(startDestination = Route.Login) {
+            composable<Route.Login> {
+                LoginScreen(
+                    onNavigateToRegister = { navController.navigate(Route.Register) },
+                    onLoginSuccess = {
+                        navController.navigate(Route.MainGraph) {
+                            popUpTo(Route.AuthGraph) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable<Route.Register> {
+                RegisterScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
         }
-      ]
+
+        // Main App Graph
+        navigation<Route.MainGraph>(startDestination = Route.Home) {
+            composable<Route.Home> {
+                HomeScreen(
+                    onNavigateToDetail = { id -> navController.navigate(Route.ItemDetail(id)) }
+                )
+            }
+            composable<Route.Search> {
+                SearchScreen()
+            }
+            composable<Route.Profile> {
+                ProfileScreen()
+            }
+            composable<Route.ItemDetail> { backStackEntry ->
+                val args = backStackEntry.toRoute<Route.ItemDetail>()
+                ItemDetailScreen(
+                    itemId = args.itemId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+        }
     }
-  }
 }
 ```
 
-2. Link parsing in `app/_layout.tsx` using `Linking`:
-```tsx
-import * as Linking from 'expo-linking'
-import { useEffect } from 'react'
+3. Main Screen with Bottom Navigation `ui/MainScreen.kt`:
+```kotlin
+package com.example.app.ui
 
-export default function RootLayout() {
-  useEffect(() => {
-    const subscription = Linking.addEventListener('url', ({ url }) => {
-      // Expo Router handles routing automatically
-      // This is for custom parsing if needed
-      console.log('Deep link received:', url)
-    })
-    return () => subscription.remove()
-  }, [])
-  // ...
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.example.app.ui.navigation.AppNavigation
+import com.example.app.ui.navigation.Route
+
+@Composable
+fun MainScreen() {
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+
+    // Show bottom bar only on specific root screens
+    val showBottomBar = currentDestination?.hierarchy?.any { 
+        it.hasRoute<Route.Home>() || it.hasRoute<Route.Search>() || it.hasRoute<Route.Profile>() 
+    } == true
+
+    Scaffold(
+        bottomBar = {
+            if (showBottomBar) {
+                NavigationBar {
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                        label = { Text("Home") },
+                        selected = currentDestination?.hierarchy?.any { it.hasRoute<Route.Home>() } == true,
+                        onClick = {
+                            navController.navigate(Route.Home) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    )
+                    // Repeat for Search and Profile...
+                }
+            }
+        }
+    ) { paddingValues ->
+        AppNavigation(
+            modifier = Modifier.padding(paddingValues),
+            navController = navController
+        )
+    }
 }
-```
-
-3. Universal Link verification file (for iOS):
-   - File to serve at `https://[domain].com/.well-known/apple-app-site-association`
-   ```json
-   {
-     "applinks": {
-       "apps": [],
-       "details": [{
-         "appID": "[TEAM_ID].[BUNDLE_ID]",
-         "paths": ["/share/*", "/reset-password"]
-       }]
-     }
-   }
-   ```
-
-4. Testing deep links:
-```bash
-# iOS Simulator
-xcrun simctl openurl booted "[appscheme]://product/123"
-
-# Android Emulator
-adb shell am start -a android.intent.action.VIEW -d "[appscheme]://product/123"
-
-# Production universal link test
-npx uri-scheme open "https://[domain].com/product/123" --ios
 ```
 
 ⚠️ Common Pitfalls:
-- Pitfall: Universal links not working because AASA file is not served with correct Content-Type.
-- Solution: Serve `apple-app-site-association` with `Content-Type: application/json` (no .json extension).
+- Pitfall: Defining string-based routes with arguments (`"details/{itemId}"`).
+- Solution: Use type-safe Kotlin Serialization routes (`@Serializable data class ItemDetail(val itemId: String)`). This prevents runtime crashes from malformed arguments.
+- Pitfall: Passing `NavController` deep into child composables.
+- Solution: Pass navigation lambdas (callbacks) down to child composables. Keep `NavController` usage contained to the top-level navigation graph.
 ```
-
-✅ **Verification Checklist:**
-- [ ] `[scheme]://home` opens app to home screen.
-- [ ] `[scheme]://product/123` opens product detail with id=123.
-- [ ] Password reset link works end-to-end.
-- [ ] AASA file accessible at `https://[domain]/.well-known/apple-app-site-association`.
 
 ---
 
-### Prompt M2.3: Navigation Patterns — Modals, Sheets, Drawers
+### Prompt M2.2: Deep Links & Intent Handling
 
 ```text
-You are a Mobile UX Navigation Specialist. Implement rich navigation patterns for [AppName].
+You are an Android Navigation Expert. Implement Deep Linking for Navigation Compose.
 
 Required Output Format: Provide complete code for:
 
-1. Bottom Sheet Modal (react-native-bottom-sheet):
-```tsx
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
-import { useRef, useCallback } from 'react'
+1. Modifying the `AndroidManifest.xml` to support the scheme:
+```xml
+<activity android:name=".MainActivity">
+    <intent-filter android:autoVerify="true">
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="https" android:host="example.com" />
+        <data android:scheme="myapp" android:host="example.com" />
+    </intent-filter>
+</activity>
+```
 
-export function useBottomSheet() {
-  const bottomSheetRef = useRef<BottomSheet>(null)
-
-  const open = useCallback(() => bottomSheetRef.current?.expand(), [])
-  const close = useCallback(() => bottomSheetRef.current?.close(), [])
-
-  const BottomSheetComponent = () => (
-    <BottomSheet
-      ref={bottomSheetRef}
-      index={-1}
-      snapPoints={['25%', '50%', '90%']}
-      enablePanDownToClose
-      backgroundStyle={{ borderRadius: 24 }}
-    >
-      <BottomSheetView>
-        {/* Content */}
-      </BottomSheetView>
-    </BottomSheet>
-  )
-
-  return { open, close, BottomSheetComponent }
+2. Adding `deepLinks` to the Composable route:
+```kotlin
+composable<Route.ItemDetail>(
+    deepLinks = listOf(
+        navDeepLink<Route.ItemDetail>(basePath = "https://example.com/item")
+    )
+) { backStackEntry ->
+    val args = backStackEntry.toRoute<Route.ItemDetail>()
+    ItemDetailScreen(itemId = args.itemId)
 }
 ```
 
-2. Full-screen modal (Expo Router modal):
-```
-// app/(modals)/_layout.tsx
-import { Stack } from 'expo-router'
-
-export default function ModalLayout() {
-  return (
-    <Stack>
-      <Stack.Screen
-        name="filter"
-        options={{
-          presentation: 'modal',
-          title: 'Filter',
-          headerLeft: () => <CloseButton />,
-        }}
-      />
-    </Stack>
-  )
-}
+⚠️ Common Pitfalls:
+- Pitfall: Deep links crashing because the app isn't authenticated yet.
+- Solution: Check authentication state at the Root level. If unauthenticated, redirect to the Login route, passing the deep link as an argument to process after login.
 ```
 
-3. Sidebar / Drawer (Expo Router drawer):
-```tsx
-import { Drawer } from 'expo-router/drawer'
-
-export default function DrawerLayout() {
-  return (
-    <Drawer
-      screenOptions={{
-        drawerType: 'front',
-        drawerStyle: { width: '80%' },
-      }}
-    >
-      <Drawer.Screen name="index" options={{ title: 'Home' }} />
-      <Drawer.Screen name="settings" options={{ title: 'Settings' }} />
-    </Drawer>
-  )
-}
-```
-
-4. iOS-style action sheet:
-```tsx
-import { ActionSheetIOS, Platform, Alert } from 'react-native'
-
-export function showActionSheet(options: string[], callback: (index: number) => void) {
-  if (Platform.OS === 'ios') {
-    ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: options.length - 1 }, callback)
-  } else {
-    // Android: use a custom BottomSheet or Dialog
-    // react-native-action-sheet provides a cross-platform solution
-  }
-}
-```
-
-5. Platform-adaptive navigation header:
-```tsx
-import { Platform } from 'react-native'
-import { Stack } from 'expo-router'
-
-<Stack.Screen
-  options={{
-    headerTitle: 'Screen Title',
-    headerBackTitle: '', // iOS only — hide "Back" label
-    headerLargeTitle: Platform.OS === 'ios', // iOS 11+ large title
-    headerTitleAlign: Platform.OS === 'android' ? 'center' : 'left',
-    headerShadowVisible: false,
-    headerStyle: { backgroundColor: 'transparent' },
-  }}
-/>
-```
-```
+---
 
 ✅ **Verification Checklist:**
-- [ ] Bottom sheet opens/closes with smooth gesture animation.
-- [ ] Modal can be dismissed by swipe down (iOS) and back button (Android).
-- [ ] Drawer does not overlap tab bar.
-- [ ] Action sheet uses native iOS pattern on iPhone.
+- [ ] Screens transition without crashing.
+- [ ] Bottom Navigation highlights the correct active tab.
+- [ ] Pressing "Back" from a bottom tab returns to the Start Destination (e.g., Home) before exiting the app.
+- [ ] Type-safe arguments (`toRoute<Route.X>()`) compile correctly.
+- [ ] Testing a deep link via adb opens the correct screen: `adb shell am start -W -a android.intent.action.VIEW -d "https://example.com/item/123" com.example.app`
 
 ---
 

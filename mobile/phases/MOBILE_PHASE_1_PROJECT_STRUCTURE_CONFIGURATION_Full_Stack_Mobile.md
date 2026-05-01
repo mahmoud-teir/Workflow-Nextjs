@@ -1,379 +1,257 @@
 <a name="phase-m1"></a>
-# 📌 MOBILE PHASE M1: PROJECT STRUCTURE & CONFIGURATION (Full-Stack Mobile Developer)
+# 📌 MOBILE PHASE M1: PROJECT STRUCTURE & CONFIGURATION (Android Engineer)
 
-> **Expo SDK:** This workflow targets **Expo SDK 52+** with **Managed Workflow**. React Native version: **0.76+ (New Architecture default)**.
-
----
-
-### Prompt M1.1: Initialize Expo Project
-
-```text
-You are a Senior React Native Infrastructure Engineer. Initialize a production-ready Expo project from scratch.
-
-App Name: [AppName]
-Bundle ID (iOS): com.[company].[appname]
-Package Name (Android): com.[company].[appname]
-Platform: [iOS / Android / Both]
-Expo Workflow: Managed (default — use Bare only if justified in TDD)
-
-Required Output Format: Provide exact commands and files for:
-
-1. Project initialization:
-   ```bash
-   npx create-expo-app@latest [AppName] --template blank-typescript
-   cd [AppName]
-   ```
-
-2. Core dependency installation:
-   ```bash
-   # Navigation
-   npx expo install expo-router
-
-   # Styling
-   npm install nativewind
-   npm install --save-dev tailwindcss
-
-   # Animations & Gestures
-   npx expo install react-native-reanimated react-native-gesture-handler
-
-   # Storage
-   npx expo install expo-secure-store expo-sqlite
-   npm install drizzle-orm
-   npm install --save-dev drizzle-kit
-
-   # State
-   npm install zustand @tanstack/react-query
-
-   # Utilities
-   npx expo install expo-image expo-constants expo-font expo-system-ui
-   npm install zod
-   ```
-
-3. `app.json` configuration:
-   ```json
-   {
-     "expo": {
-       "name": "[AppName]",
-       "slug": "[app-slug]",
-       "version": "1.0.0",
-       "orientation": "portrait",
-       "icon": "./assets/images/icon.png",
-       "scheme": "[appscheme]",
-       "userInterfaceStyle": "automatic",
-       "splash": { "resizeMode": "contain" },
-       "ios": {
-         "bundleIdentifier": "com.[company].[appname]",
-         "supportsTablet": false,
-         "buildNumber": "1"
-       },
-       "android": {
-         "adaptiveIcon": { "foregroundImage": "./assets/images/adaptive-icon.png" },
-         "package": "com.[company].[appname]",
-         "versionCode": 1
-       },
-       "plugins": [
-         "expo-router",
-         "expo-secure-store",
-         ["expo-sqlite", { "enableFTS": true }]
-       ],
-       "experiments": { "typedRoutes": true }
-     }
-   }
-   ```
-
-4. `tailwind.config.js` for NativeWind v4:
-   ```js
-   const { hairlineWidth } = require('nativewind/theme')
-   module.exports = {
-     content: ['./app/**/*.{js,jsx,ts,tsx}', './components/**/*.{js,jsx,ts,tsx}'],
-     presets: [require('nativewind/preset')],
-     theme: {
-       extend: {
-         colors: {
-           // Map from MOBILE_DESIGN.md
-           primary: '[your-primary-hex]',
-           background: '[your-bg-hex]',
-           surface: '[your-surface-hex]',
-         },
-         borderWidth: { hairline: hairlineWidth() },
-       },
-     },
-   }
-   ```
-
-5. `babel.config.js`:
-   ```js
-   module.exports = function(api) {
-     api.cache(true)
-     return {
-       presets: ['babel-preset-expo'],
-       plugins: ['nativewind/babel', 'react-native-reanimated/plugin'],
-     }
-   }
-   ```
-   ⚠️ `react-native-reanimated/plugin` MUST be the LAST plugin.
-
-6. TypeScript `tsconfig.json`:
-   ```json
-   {
-     "extends": "expo/tsconfig.base",
-     "compilerOptions": {
-       "strict": true,
-       "paths": {
-         "@/*": ["./*"],
-         "@/components/*": ["./components/*"],
-         "@/lib/*": ["./lib/*"],
-         "@/store/*": ["./lib/store/*"],
-         "@/db/*": ["./lib/db/*"]
-       }
-     }
-   }
-   ```
-
-⚠️ Common Pitfalls:
-- Pitfall: Adding `react-native-reanimated/plugin` before other Babel plugins.
-- Solution: It MUST be last in the `plugins` array.
-- Pitfall: Missing `scheme` in `app.json` breaking deep links.
-- Solution: Always define a URL scheme matching your app slug.
-- Pitfall: NativeWind v4 className not working on custom components.
-- Solution: Wrap custom components with `cssInterop` or use `styled()`.
-```
-
-✅ **Verification Checklist:**
-- [ ] `npx expo start` runs without errors on iOS Simulator and Android Emulator.
-- [ ] TypeScript strict mode is enabled (`strict: true`).
-- [ ] Path aliases resolve correctly (import from `@/components/...`).
-- [ ] NativeWind className applies a color on a test View.
-- [ ] Reanimated plugin is last in babel plugins array.
+> **Rule:** All Native Android projects MUST use Gradle Version Catalogs (`libs.versions.toml`) and strictly separate code by feature or layer.
 
 ---
 
-### Prompt M1.2: EAS Configuration & Build Setup
+### Prompt M1.1: Project Initialization & Version Catalogs
 
 ```text
-You are a React Native DevOps Engineer. Configure EAS (Expo Application Services) for building and submitting the app.
+You are a Lead Android Engineer. Initialize the Native Android project structure and set up Gradle Version Catalogs.
 
-Constraints:
-- Use EAS Build for creating iOS (.ipa) and Android (.apk/.aab) builds.
-- Use EAS Submit for App Store and Play Store submissions.
-- Use EAS Update for OTA (Over-the-Air) updates to existing app builds.
-- Store all secrets in EAS Secrets — never hardcode.
+Dependencies needed:
+- Core: AndroidX Core KTX, Lifecycle Runtime, Activity Compose
+- UI: Jetpack Compose (BOM), Material 3, UI Tooling, UI Test Manifest
+- Navigation: Navigation Compose, kotlinx-serialization
+- DI: Dagger Hilt
+- Network: Retrofit, OkHttp Logging Interceptor
+- Database: Room
+- Async: Kotlin Coroutines
 
-Required Output Format: Provide complete configs for:
+Required Output Format: Provide complete code for:
 
-1. EAS CLI setup:
-   ```bash
-   npm install -g eas-cli
-   eas login
-   eas build:configure
-   ```
+1. `gradle/libs.versions.toml`:
+```toml
+[versions]
+agp = "8.3.0"
+kotlin = "1.9.22"
+coreKtx = "1.12.0"
+junit = "4.13.2"
+junitVersion = "1.1.5"
+espressoCore = "3.5.1"
+lifecycleRuntimeKtx = "2.7.0"
+activityCompose = "1.8.2"
+composeBom = "2024.02.00"
+hilt = "2.50"
+hiltNavigationCompose = "1.2.0"
+room = "2.6.1"
+retrofit = "2.9.0"
+okhttp = "4.12.0"
+coroutines = "1.8.0"
+navigationCompose = "2.7.7"
+serialization = "1.6.3"
 
-2. `eas.json` — three build profiles:
-   ```json
-   {
-     "cli": { "version": ">= 14.0.0" },
-     "build": {
-       "development": {
-         "developmentClient": true,
-         "distribution": "internal",
-         "ios": { "simulator": true },
-         "android": { "buildType": "apk", "gradleCommand": ":app:assembleDebug" },
-         "env": { "APP_ENV": "development" }
-       },
-       "preview": {
-         "distribution": "internal",
-         "ios": { "simulator": false },
-         "android": { "buildType": "apk" },
-         "channel": "preview",
-         "env": { "APP_ENV": "preview" }
-       },
-       "production": {
-         "distribution": "store",
-         "ios": { "buildNumber": "auto" },
-         "android": { "versionCode": "auto", "buildType": "app-bundle" },
-         "channel": "production",
-         "env": { "APP_ENV": "production" }
-       }
-     },
-     "submit": {
-       "production": {
-         "ios": { "appleId": "$APPLE_ID", "ascAppId": "$ASC_APP_ID" },
-         "android": { "serviceAccountKeyPath": "./google-service-account.json" }
-       }
-     }
-   }
-   ```
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 
-3. Environment variable handling with `expo-constants`:
-   ```typescript
-   // lib/config.ts
-   import Constants from 'expo-constants'
+# Navigation
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 
-   const ENV = {
-     development: { apiUrl: 'http://localhost:3000/api', debug: true },
-     preview: { apiUrl: 'https://api-preview.[domain].com', debug: false },
-     production: { apiUrl: 'https://api.[domain].com', debug: false },
-   }
+# Hilt
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
+androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 
-   type AppEnv = keyof typeof ENV
-   const appEnv = (Constants.expoConfig?.extra?.APP_ENV ?? 'development') as AppEnv
+# Room
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 
-   export const config = ENV[appEnv]
-   ```
+# Network
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 
-4. EAS Secrets setup (CLI commands):
-   ```bash
-   # Set secrets that will be available during build
-   eas secret:create --scope project --name API_KEY --value "your-key-here"
-   eas secret:create --scope project --name SUPABASE_URL --value "https://..."
-   ```
+# Coroutines
+coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
-⚠️ Common Pitfalls:
-- Pitfall: Forgetting to set `channel` in eas.json — OTA updates won't work.
-- Solution: Every non-development build profile must have a `channel`.
-- Pitfall: Using process.env for runtime config (it's only available at build time).
-- Solution: Use `expo-constants` to expose runtime config via `app.config.js` extra field.
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+jetbrainsKotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+ksp = { id = "com.google.devtools.ksp", version = "1.9.22-1.0.17" }
+serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ```
 
-✅ **Verification Checklist:**
-- [ ] `eas build:configure` completed without errors.
-- [ ] `eas.json` has development, preview, and production profiles.
-- [ ] `lib/config.ts` correctly switches API URL by environment.
-- [ ] No API keys in source code or `app.json`.
+2. App-level `build.gradle.kts`:
+```kotlin
+plugins {
+    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.jetbrainsKotlinAndroid)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.serialization)
+}
 
----
+android {
+    namespace = "com.example.app"
+    compileSdk = 34
 
-### Prompt M1.3: Project Folder Architecture
+    defaultConfig {
+        applicationId = "com.example.app"
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables { useSupportLibrary = true }
+    }
 
-```text
-You are a React Native Architect. Create the production-grade folder structure for [AppName].
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = "17" }
+    buildFeatures { compose = true }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.10" }
+}
 
-Required Output Format: The complete folder tree with file responsibilities:
-
-```
-[AppName]/
-├── app/                          # Expo Router — all screens live here
-│   ├── _layout.tsx               # Root layout: fonts, providers, theme
-│   ├── +not-found.tsx            # 404 screen
-│   ├── (auth)/                   # Unauthenticated stack
-│   │   ├── _layout.tsx           # Auth stack layout
-│   │   ├── index.tsx             # Welcome / splash redirect
-│   │   ├── login.tsx             # Login screen
-│   │   ├── register.tsx          # Registration screen
-│   │   └── forgot-password.tsx   # Password reset
-│   ├── (tabs)/                   # Authenticated tab navigator
-│   │   ├── _layout.tsx           # Tab bar configuration
-│   │   ├── index.tsx             # Home tab
-│   │   ├── [feature].tsx         # Main feature tab
-│   │   └── profile.tsx           # Profile/settings tab
-│   ├── (modals)/                 # Full-screen modal stack
-│   │   ├── _layout.tsx           # Modal layout (no tab bar)
-│   │   └── [modal-name].tsx      # Individual modal screens
-│   └── [feature]/                # Feature-specific deep screens
-│       ├── [id].tsx              # Dynamic detail screen
-│       └── [id]/
-│           └── edit.tsx          # Edit screen
-├── components/
-│   ├── ui/                       # Generic design system components
-│   │   ├── Button.tsx            # Base button with variants
-│   │   ├── Text.tsx              # Typography component
-│   │   ├── Input.tsx             # Form input
-│   │   ├── Card.tsx              # Surface card
-│   │   ├── Badge.tsx             # Status badge
-│   │   ├── Skeleton.tsx          # Loading skeleton
-│   │   ├── Sheet.tsx             # Bottom sheet wrapper
-│   │   ├── Toast.tsx             # Toast notification
-│   │   ├── Avatar.tsx            # User avatar
-│   │   └── Icon.tsx              # Lucide icon wrapper
-│   ├── [feature]/                # Feature-specific components
-│   └── layout/                   # Layout components
-│       ├── SafeAreaView.tsx       # Safe area wrapper
-│       ├── KeyboardAvoidingView.tsx
-│       └── ScreenContainer.tsx    # Standard screen wrapper
-├── lib/
-│   ├── api/                      # API layer
-│   │   ├── client.ts             # Axios/Fetch client with interceptors
-│   │   ├── hooks/                # TanStack Query hooks
-│   │   │   └── use[Feature].ts
-│   │   └── [feature].ts          # API functions
-│   ├── db/                       # Local database
-│   │   ├── client.ts             # SQLite client
-│   │   ├── schema.ts             # Drizzle schema
-│   │   ├── migrations/           # Drizzle migrations
-│   │   └── queries/              # Drizzle query functions
-│   ├── store/                    # Zustand stores
-│   │   ├── auth.ts               # Auth state
-│   │   ├── ui.ts                 # UI state (theme, modals)
-│   │   └── [feature].ts          # Feature state
-│   ├── auth/                     # Auth utilities
-│   │   ├── token.ts              # Token storage (SecureStore)
-│   │   └── session.ts            # Session management
-│   ├── hooks/                    # Shared custom hooks
-│   │   ├── useColorScheme.ts     # Dark/light mode
-│   │   ├── useNetworkStatus.ts   # Online/offline detection
-│   │   └── use[Hook].ts
-│   └── utils/                    # Pure utility functions
-│       ├── format.ts             # Date, number, currency formatters
-│       ├── validation.ts         # Zod schemas
-│       └── constants.ts          # App-wide constants
-├── assets/
-│   ├── images/                   # Static images
-│   │   ├── icon.png              # 1024x1024 App icon
-│   │   ├── adaptive-icon.png     # Android adaptive icon foreground
-│   │   └── splash.png            # Splash screen
-│   └── fonts/                    # Local font files (if not using @expo-google-fonts)
-├── app.json                      # Expo configuration
-├── eas.json                      # EAS Build/Submit config
-├── tailwind.config.js            # NativeWind configuration
-├── babel.config.js               # Babel (reanimated last!)
-├── tsconfig.json                 # TypeScript config
-├── MOBILE_DESIGN.md              # Design system reference
-└── .env                          # Local dev only (never commit)
-```
-
-Root `app/_layout.tsx` provider setup:
-```tsx
-import { Stack } from 'expo-router'
-import { StatusBar } from 'expo-status-bar'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from '@/lib/api/client'
-import { useFonts, Inter_400Regular, Inter_700Bold } from '@expo-google-fonts/inter'
-import * as SplashScreen from 'expo-splash-screen'
-import { useEffect } from 'react'
-import '../global.css' // NativeWind
-
-SplashScreen.preventAutoHideAsync()
-
-export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_700Bold })
-
-  useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync()
-  }, [fontsLoaded])
-
-  if (!fontsLoaded) return null
-
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="auto" />
-        <Stack screenOptions={{ headerShown: false }} />
-      </QueryClientProvider>
-    </GestureHandlerRootView>
-  )
+dependencies {
+    // Implement all the libraries from the TOML catalog here
+    implementation(libs.androidx.core.ktx)
+    // ...
 }
 ```
 ```
 
+---
+
+### Prompt M1.2: Directory Structure & Core Application Class
+
+```text
+You are an Android Architect. Set up the package structure and the required core Application class.
+
+Constraints:
+- Use feature-based packaging (e.g., `ui/auth/`, `ui/home/`, `data/`, `di/`).
+- Initialize Dagger Hilt in the Application class.
+- Update `AndroidManifest.xml` to point to the new Application class.
+
+Required Output Format: Provide complete code for:
+
+1. Directory Structure (Linux tree format):
+```
+src/main/java/com/example/app/
+├── App.kt                # Custom Application class
+├── MainActivity.kt       # Single Activity
+├── di/                   # Hilt Modules
+│   ├── AppModules.kt
+│   └── NetworkModules.kt
+├── data/                 # Data Layer
+│   ├── local/            # Room DAOs, Entities, DataStore
+│   ├── remote/           # Retrofit Interfaces
+│   └── repository/       # Repository Implementations
+├── domain/               # Domain Layer (Optional)
+│   ├── model/            # Business Models
+│   └── repository/       # Repository Interfaces
+├── ui/                   # Presentation Layer
+│   ├── theme/            # Compose Theme, Color, Type
+│   ├── components/       # Shared Composables
+│   ├── auth/             # Feature: Auth
+│   │   ├── LoginScreen.kt
+│   │   └── AuthViewModel.kt
+│   ├── home/             # Feature: Home
+│   └── navigation/       # Navigation Graphs
+```
+
+2. `App.kt`
+```kotlin
+package com.example.app
+
+import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
+
+@HiltAndroidApp
+class App : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        // Initialize Timber, Firebase, Crashlytics, etc.
+    }
+}
+```
+
+3. Update `AndroidManifest.xml`:
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:name=".App"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.App">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+```
+
+4. `MainActivity.kt` setup with Compose and Hilt:
+```kotlin
+package com.example.app
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import dagger.hilt.android.AndroidEntryPoint
+import com.example.app.ui.theme.AppTheme
+import com.example.app.ui.navigation.AppNavigation
+
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            AppTheme {
+                AppNavigation()
+            }
+        }
+    }
+}
+```
+
+⚠️ Common Pitfalls:
+- Pitfall: Forgetting `@HiltAndroidApp` in `App.kt` or `@AndroidEntryPoint` in `MainActivity.kt`.
+- Solution: Hilt will crash immediately on launch without these annotations.
+- Pitfall: Hardcoding dependency versions in `build.gradle.kts` instead of the Version Catalog.
+- Solution: Always add dependencies to `libs.versions.toml` first.
+```
+
+---
+
 ✅ **Verification Checklist:**
-- [ ] `GestureHandlerRootView` wraps the entire app at the root level.
-- [ ] `QueryClientProvider` is at root level.
-- [ ] Fonts load via `useFonts` and splash screen hides on completion.
-- [ ] Path aliases `@/*` resolve to correct directories.
+- [ ] `libs.versions.toml` is created and correctly linked.
+- [ ] Gradle sync completes successfully.
+- [ ] `App.kt` has `@HiltAndroidApp`.
+- [ ] `AndroidManifest.xml` references `.App`.
+- [ ] App builds and runs successfully, displaying a blank screen or basic theme.
 
 ---
 
 📎 **Related Phases:**
-- Prerequisites: [Phase M0B: HiFi Prototype](./MOBILE_PHASE_0B_HIFI_PROTOTYPE_UI_Designer.md)
-- Proceeds to: [Phase M2: Navigation Architecture](./MOBILE_PHASE_2_NAVIGATION_ARCHITECTURE_Mobile_Developer.md)
+- Proceeds to: [Phase M2: Navigation Architecture](./MOBILE_PHASE_2_NAVIGATION_ARCHITECTURE_Android_Architect.md)

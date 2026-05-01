@@ -1,395 +1,220 @@
 <a name="phase-m5"></a>
 # 📌 MOBILE PHASE M5: AUTHENTICATION & SECURITY (Security Expert)
 
-> **Security First:** Mobile authentication has unique attack vectors — insecure storage, jailbreak bypass, reverse engineering, and network interception. Every decision must be security-driven.
+> **Rule:** Never store authentication tokens, passwords, or PII in `SharedPreferences`, `DataStore`, or plaintext SQLite. Always use `EncryptedSharedPreferences` or the Android Keystore system.
 
 ---
 
-### Prompt M5.1: Mobile Authentication System
+### Prompt M5.1: EncryptedSharedPreferences (Token Storage)
 
 ```text
-You are a rigorous Mobile Security Expert. Implement a production-grade authentication system for a React Native / Expo app.
+You are an Android Security Expert. Implement secure token storage for [AppName] using the AndroidX Security library.
 
-Auth options — choose ONE:
-- Option A: Supabase Auth (recommended — managed, supports OAuth, MFA)
-- Option B: Clerk React Native SDK (managed — fastest to implement)
-- Option C: Custom JWT (maximum control — complex to implement securely)
-
-Constraints:
-- NEVER store tokens in AsyncStorage — use expo-secure-store (Keychain/Keystore).
-- Implement automatic token refresh before expiry.
-- Support biometric re-authentication for sensitive actions.
-- Handle auth state changes globally (logout on 401, session expiry).
+Requirements:
+- Add the `androidx.security:security-crypto` dependency.
+- Create a `TokenManager` class that wraps `EncryptedSharedPreferences`.
+- Provide Hilt integration.
+- Include methods for saving, retrieving, and clearing tokens.
 
 Required Output Format: Provide complete code for:
 
-1. Token management `lib/auth/token.ts`:
-```typescript
-import * as SecureStore from 'expo-secure-store'
-
-const KEYS = {
-  ACCESS_TOKEN: 'auth_access_token',
-  REFRESH_TOKEN: 'auth_refresh_token',
-  USER_ID: 'auth_user_id',
-} as const
-
-export async function getToken(key: keyof typeof KEYS): Promise<string | null> {
-  return SecureStore.getItemAsync(KEYS[key])
-}
-
-export async function setToken(key: keyof typeof KEYS, value: string): Promise<void> {
-  await SecureStore.setItemAsync(KEYS[key], value, {
-    keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,  // iOS Keychain access level
-  })
-}
-
-export async function clearTokens(): Promise<void> {
-  await Promise.all(Object.values(KEYS).map((key) => SecureStore.deleteItemAsync(key)))
-}
+1. Setup in `gradle/libs.versions.toml`:
+```toml
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version = "1.1.0-alpha06" }
 ```
 
-2. Auth Zustand store `lib/store/auth.ts`:
-```typescript
-import { create } from 'zustand'
-import { clearTokens, getToken } from '@/lib/auth/token'
-import { router } from 'expo-router'
+2. Secure Storage Manager `data/local/TokenManager.kt`:
+```kotlin
+package com.example.app.data.local
 
-interface User {
-  id: string
-  email: string
-  name: string
-  avatarUrl?: string
-}
+import android.content.Context
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-interface AuthState {
-  user: User | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  setUser: (user: User) => void
-  logout: () => Promise<void>
-  initialize: () => Promise<void>
-}
-
-export const useAuthStore = create<AuthState>()((set) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
-
-  setUser: (user) => set({ user, isAuthenticated: true, isLoading: false }),
-
-  logout: async () => {
-    await clearTokens()
-    set({ user: null, isAuthenticated: false })
-    router.replace('/(auth)/login')
-  },
-
-  initialize: async () => {
-    try {
-      const token = await getToken('ACCESS_TOKEN')
-      if (!token) {
-        set({ isLoading: false })
-        return
-      }
-      // Validate token + fetch user...
-      const user = await fetchCurrentUser()
-      set({ user, isAuthenticated: true })
-    } catch {
-      await clearTokens()
-    } finally {
-      set({ isLoading: false })
+@Singleton
+class TokenManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    companion object {
+        private const val PREFS_NAME = "secure_prefs"
+        private const val KEY_ACCESS_TOKEN = "access_token"
+        private const val KEY_REFRESH_TOKEN = "refresh_token"
     }
-  },
-}))
-```
 
-3. Login screen with Supabase (Option A):
-```typescript
-import { supabase } from '@/lib/db/supabase'
-import { useAuthStore } from '@/lib/store/auth'
+    private val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
 
-export async function loginWithEmail(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) throw new ApiError(error.message, 'AUTH_FAILED', 401)
+    private val sharedPreferences = EncryptedSharedPreferences.create(
+        context,
+        PREFS_NAME,
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
 
-  const { setUser } = useAuthStore.getState()
-  setUser({
-    id: data.user.id,
-    email: data.user.email!,
-    name: data.user.user_metadata.name,
-  })
-}
-
-// OAuth (Google/Apple) — uses native browser:
-export async function loginWithGoogle() {
-  await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: 'myapp://auth-callback' },
-  })
-}
-```
-
-4. Session listener (in `app/_layout.tsx`):
-```typescript
-useEffect(() => {
-  const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-      useAuthStore.getState().setUser(/* map session.user */)
-    } else if (event === 'SIGNED_OUT') {
-      useAuthStore.getState().logout()
-    } else if (event === 'TOKEN_REFRESHED') {
-      // Token auto-refreshed — no action needed
+    fun saveToken(token: String) {
+        sharedPreferences.edit().putString(KEY_ACCESS_TOKEN, token).apply()
     }
-  })
-  return () => listener.subscription.unsubscribe()
-}, [])
+
+    fun getToken(): String? {
+        return sharedPreferences.getString(KEY_ACCESS_TOKEN, null)
+    }
+
+    fun clearTokens() {
+        sharedPreferences.edit().clear().apply()
+    }
+}
 ```
 
 ⚠️ Common Pitfalls:
-- Pitfall: Storing JWT in AsyncStorage — readable by any app with root access.
-- Solution: Always use expo-secure-store (maps to iOS Keychain / Android Keystore).
-- Pitfall: Not handling the app going to background during auth flow.
-- Solution: Use `AppState` listener to re-validate session when app returns to foreground.
+- Pitfall: Hardcoding encryption keys.
+- Solution: Let `MasterKey.Builder` manage the key in the Android Keystore system.
+- Pitfall: Using alpha versions of the crypto library that crash on specific OEMs.
+- Solution: Test on Samsung devices (especially Android 9/10), which sometimes have Keystore quirks, or use `1.1.0-alpha06` which is generally stable.
 ```
-
-✅ **Verification Checklist:**
-- [ ] Tokens stored in SecureStore (verify with Expo debugging tools).
-- [ ] Logout clears ALL token keys from SecureStore.
-- [ ] Expired session redirects to login without showing raw error.
-- [ ] OAuth flow returns to app correctly via deep link.
 
 ---
 
 ### Prompt M5.2: Biometric Authentication
 
 ```text
-You are a Mobile Biometric Security Engineer. Add Face ID / Touch ID / Fingerprint authentication.
+You are a Mobile Security Engineer. Implement Android BiometricPrompt to protect sensitive areas of the app.
 
-Use cases:
-- Re-authenticate before sensitive actions (payments, data export, account deletion)
-- App lock (require biometrics after [N] minutes in background)
-- Quick login (skip password for returning users)
+Requirements:
+- Use `androidx.biometric:biometric`.
+- Handle success, error, and fallback scenarios.
+- Wrap the logic in a reusable Coroutine or Callback-based helper.
 
-Required Output Format: Provide complete code for:
+Required Output Format: Provide complete code for `util/BiometricHelper.kt`:
 
-1. Installation:
-```bash
-npx expo install expo-local-authentication
-```
+```kotlin
+package com.example.app.util
 
-2. `lib/auth/biometric.ts`:
-```typescript
-import * as LocalAuthentication from 'expo-local-authentication'
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 
-export async function checkBiometricSupport() {
-  const hasHardware = await LocalAuthentication.hasHardwareAsync()
-  const isEnrolled = await LocalAuthentication.isEnrolledAsync()
-  const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync()
+object BiometricHelper {
 
-  return {
-    isSupported: hasHardware && isEnrolled,
-    hasFaceID: supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION),
-    hasTouchID: supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT),
-  }
-}
+    fun authenticate(
+        activity: FragmentActivity,
+        title: String,
+        subtitle: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val biometricManager = BiometricManager.from(activity)
+        val canAuthenticate = biometricManager.canAuthenticate(
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        )
 
-export async function authenticateWithBiometric(reason: string): Promise<boolean> {
-  const { isSupported } = await checkBiometricSupport()
-  if (!isSupported) return false
+        if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
+            onError("Biometrics not available or not enrolled.")
+            return
+        }
 
-  const result = await LocalAuthentication.authenticateAsync({
-    promptMessage: reason,
-    fallbackLabel: 'Use Passcode',
-    cancelLabel: 'Cancel',
-    disableDeviceFallback: false,  // Allow PIN/passcode fallback
-  })
+        val executor = ContextCompat.getMainExecutor(activity)
+        val biometricPrompt = BiometricPrompt(activity, executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    onError(errString.toString())
+                }
 
-  return result.success
-}
-```
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    onSuccess()
+                }
 
-3. Biometric gate component:
-```tsx
-import { authenticateWithBiometric } from '@/lib/auth/biometric'
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                    // Usually handled automatically by the system UI
+                }
+            })
 
-export function BiometricGate({
-  children,
-  reason = 'Authenticate to continue',
-  fallback,
-}: {
-  children: React.ReactNode
-  reason?: string
-  fallback?: React.ReactNode
-}) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(title)
+            .setSubtitle(subtitle)
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+            .build()
 
-  const authenticate = async () => {
-    const success = await authenticateWithBiometric(reason)
-    setIsAuthenticated(success)
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <View>
-        {fallback ?? (
-          <Pressable onPress={authenticate}>
-            <Text>Authenticate with Face ID / Touch ID</Text>
-          </Pressable>
-        )}
-      </View>
-    )
-  }
-
-  return <>{children}</>
+        biometricPrompt.authenticate(promptInfo)
+    }
 }
 ```
-
-4. App lock (re-authenticate after background):
-```typescript
-import { AppState, AppStateStatus } from 'react-native'
-
-export function useAppLock(lockAfterSeconds = 300) {
-  const [backgroundedAt, setBackgroundedAt] = useState<Date | null>(null)
-  const [isLocked, setIsLocked] = useState(false)
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
-      if (state === 'background') setBackgroundedAt(new Date())
-      if (state === 'active' && backgroundedAt) {
-        const elapsed = (Date.now() - backgroundedAt.getTime()) / 1000
-        if (elapsed > lockAfterSeconds) setIsLocked(true)
-        setBackgroundedAt(null)
-      }
-    })
-    return () => subscription.remove()
-  }, [backgroundedAt, lockAfterSeconds])
-
-  const unlock = async () => {
-    const success = await authenticateWithBiometric('Unlock [AppName]')
-    if (success) setIsLocked(false)
-  }
-
-  return { isLocked, unlock }
-}
+*Note: MainActivity must inherit from `FragmentActivity` (or `AppCompatActivity`) instead of `ComponentActivity` for BiometricPrompt to work.*
 ```
-
-⚠️ Common Pitfalls:
-- Pitfall: Not adding `NSFaceIDUsageDescription` to `app.json` — Apple rejects the build.
-- Solution: Add to infoPlist: `{ "NSFaceIDUsageDescription": "Authenticate to access your account" }`.
-- Pitfall: Biometric auth succeeds but you're not verifying server-side.
-- Solution: Biometrics are a UI gate only. Always verify session tokens server-side.
-```
-
-✅ **Verification Checklist:**
-- [ ] Face ID / Touch ID prompt appears with correct reason string.
-- [ ] Fallback to passcode works when biometric fails.
-- [ ] `NSFaceIDUsageDescription` added to app.json infoPlist (iOS).
-- [ ] App lock activates after correct background timeout.
 
 ---
 
-### Prompt M5.3: Mobile Security Hardening
+### Prompt M5.3: Security Best Practices Check (OWASP)
 
 ```text
-You are an OWASP Mobile Application Security Expert. Harden [AppName] against OWASP Mobile Top 10.
+You are a Mobile Security Auditor. Review the Android implementation against OWASP Mobile Top 10 standards.
 
-OWASP Mobile Top 10 (2024):
-M1: Improper Credential Usage
-M2: Inadequate Supply Chain Security
-M3: Insecure Authentication/Authorization
-M4: Insufficient Input/Output Validation
-M5: Insecure Communication
-M6: Inadequate Privacy Controls
-M7: Insufficient Binary Protections
-M8: Security Misconfiguration
-M9: Insecure Data Storage
-M10: Insufficient Cryptography
+Output a checklist confirming compliance for:
+1. Network Security Configuration (XML) to prevent cleartext traffic.
+2. Root detection or basic Play Integrity API usage (if applicable).
+3. FlagSecure to prevent screenshots on sensitive screens.
 
-Required Output Format: Implement mitigations for each:
+Required Output:
+Provide the setup for `res/xml/network_security_config.xml` to strictly enforce HTTPS:
 
-1. M1 — Credential Security:
-- All credentials in expo-secure-store ✅
-- No credentials in app.json, source code, or logs ✅
-- Environment variables via EAS Secrets ✅
-- Certificate pinning for sensitive APIs (optional, adds complexity):
-```bash
-npm install react-native-ssl-pinning
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">api.example.com</domain>
+    </domain-config>
+    <!-- Allow cleartext for localhost debugging -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>
 ```
 
-2. M5 — Secure Communication:
-```typescript
-// Verify HTTPS only in production
-if (process.env.NODE_ENV === 'production') {
-  if (!config.apiUrl.startsWith('https://')) {
-    throw new Error('Production API must use HTTPS')
-  }
-}
+And in `AndroidManifest.xml`:
+```xml
+<application
+    ...
+    android:networkSecurityConfig="@xml/network_security_config">
 ```
 
-3. M7 — Binary Protections (via EAS):
-```json
-// eas.json production profile
-{
-  "build": {
-    "production": {
-      "android": { "buildType": "app-bundle" },  // AAB is harder to reverse-engineer than APK
-      "ios": { "buildConfiguration": "Release" }
+For Compose screen protection (prevent screenshots):
+```kotlin
+@Composable
+fun SecureScreen() {
+    val activity = LocalContext.current as Activity
+    DisposableEffect(Unit) {
+        activity.window.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE
+        )
+        onDispose {
+            activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
     }
-  }
-}
-```
-
-4. M9 — Secure Data Storage audit checklist:
-```typescript
-// ❌ WRONG — insecure storage
-AsyncStorage.setItem('token', accessToken)
-MMKV.set('password', password)
-
-// ✅ CORRECT
-SecureStore.setItemAsync('auth_access_token', accessToken)
-
-// Audit: search for insecure patterns
-// grep -r "AsyncStorage.setItem" src/ — should not contain tokens/passwords
-```
-
-5. Input validation with Zod on all user inputs:
-```typescript
-import { z } from 'zod'
-
-export const LoginSchema = z.object({
-  email: z.string().email('Invalid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-})
-
-// Validate before API call:
-const result = LoginSchema.safeParse({ email, password })
-if (!result.success) throw new ValidationError(result.error.flatten())
-```
-
-6. Root/jailbreak detection (optional — for financial/healthcare apps):
-```bash
-npm install react-native-device-info
-```
-```typescript
-import DeviceInfo from 'react-native-device-info'
-
-async function checkDeviceSecurity() {
-  const isEmulator = await DeviceInfo.isEmulator()
-  // Note: React Native doesn't have a reliable jailbreak detector without native modules
-  // Expo Managed Workflow: use expo-device for basic checks
-  return { isEmulator }
+    // ... UI
 }
 ```
 ```
+
+---
 
 ✅ **Verification Checklist:**
-- [ ] No secrets in source code (`grep -r "secret\|password\|api_key" src/` returns nothing sensitive).
-- [ ] All API calls use HTTPS in production.
-- [ ] Zod validation on all user-facing input forms.
-- [ ] SecureStore used for all sensitive data (no AsyncStorage for tokens).
-- [ ] Production build uses Release configuration (not Debug).
+- [ ] `EncryptedSharedPreferences` compiles and saves/retrieves data correctly.
+- [ ] Token is attached to Retrofit requests via interceptor.
+- [ ] `NetworkSecurityConfig` enforces HTTPS for production domains.
+- [ ] Attempting a screenshot on a `SecureScreen` results in a black image.
+- [ ] App prompts for Face/Fingerprint when `BiometricHelper` is triggered.
 
 ---
 
 📎 **Related Phases:**
-- Prerequisites: [Phase M4: Database & Offline](./MOBILE_PHASE_4_DATABASE_OFFLINE_STORAGE_Mobile_Architect.md)
+- Prerequisites: [Phase M4: Database](./MOBILE_PHASE_4_DATABASE_OFFLINE_STORAGE_Mobile_Architect.md)
 - Proceeds to: [Phase M6: UI Components](./MOBILE_PHASE_6_UI_COMPONENTS_DESIGN_SYSTEM_Frontend_Developer.md)

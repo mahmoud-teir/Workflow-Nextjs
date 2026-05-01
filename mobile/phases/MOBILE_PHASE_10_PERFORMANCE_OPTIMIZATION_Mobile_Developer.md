@@ -1,289 +1,180 @@
 <a name="phase-m10"></a>
-# 📌 MOBILE PHASE M10: PERFORMANCE OPTIMIZATION (Mobile Developer)
+# 📌 MOBILE PHASE M10: PERFORMANCE OPTIMIZATION (Performance Specialist)
 
-> **Performance Budget:** 60fps animations · <3s cold start · <50MB JS bundle · <200MB memory usage
+> **Rule:** Never measure Android performance in Debug mode. Debug mode contains heavy tooling overhead. Only measure performance in a `Release` build with R8 enabled.
 
 ---
 
-### Prompt M10.1: List Performance — FlashList & FlatList
+### Prompt M10.1: Compose List Optimization (LazyColumn)
 
 ```text
-You are a React Native Performance Engineer. Optimize list rendering for [AppName].
+You are a Jetpack Compose Performance Expert. Optimize the main list view.
 
-Performance rules:
-- Replace ALL ScrollView-with-map with FlatList or FlashList.
-- FlashList (Shopify) is 10x faster than FlatList for most use cases.
-- Never render more than what's visible — use windowed rendering.
+Requirements:
+- Ensure all items in `LazyColumn` use a stable `key`.
+- Verify that item content type is used if lists have varying UI components.
+- Ensure the item data class is `@Stable` or immutable.
 
-Required Output Format: Provide complete code for:
+Required Output Format: Provide complete optimized code:
 
-1. FlashList installation:
-```bash
-npx expo install @shopify/flash-list
-```
+```kotlin
+// 1. Data classes must be immutable (val only) and ideally primitive or String
+@Immutable
+data class FeedItem(
+    val id: String,
+    val title: String,
+    val type: Int
+)
 
-2. FlashList implementation (vs FlatList):
-```tsx
-import { FlashList } from '@shopify/flash-list'
-
-// ✅ CORRECT — FlashList with proper estimatedItemSize
-export function PostList({ posts }: { posts: Post[] }) {
-  const renderItem = useCallback(({ item }: { item: Post }) => (
-    <PostCard post={item} />
-  ), [])
-
-  const keyExtractor = useCallback((item: Post) => item.id, [])
-
-  return (
-    <FlashList
-      data={posts}
-      renderItem={renderItem}
-      keyExtractor={keyExtractor}
-      estimatedItemSize={120}          // Critical: must match actual item height
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 100 }}
-      ItemSeparatorComponent={() => <View className="h-px bg-gray-100 dark:bg-gray-800" />}
-      ListEmptyComponent={<EmptyState />}
-      ListFooterComponent={isLoading ? <LoadingFooter /> : null}
-      onEndReached={fetchNextPage}
-      onEndReachedThreshold={0.3}      // Load more when 30% from bottom
-    />
-  )
+// 2. LazyColumn implementation
+@Composable
+fun FeedList(items: List<FeedItem>, onUserClick: (String) -> Unit) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        items(
+            items = items,
+            // REQUIRED: Provide a unique key to prevent recomposition when order changes
+            key = { item -> item.id },
+            // OPTIONAL: Provide contentType to pool composables efficiently
+            contentType = { item -> item.type }
+        ) { item ->
+            // Use remember to avoid allocating new lambdas on every recomposition
+            val currentOnClick = rememberUpdatedState(onUserClick)
+            
+            FeedCard(
+                item = item,
+                onClick = { currentOnClick.value(item.id) }
+            )
+        }
+    }
 }
-```
-
-3. Infinite scroll FlashList:
-```tsx
-export function InfinitePostList() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfinitePosts('all')
-  const posts = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data])
-
-  return (
-    <FlashList
-      data={posts}
-      renderItem={({ item }) => <PostCard post={item} />}
-      estimatedItemSize={120}
-      onEndReached={() => { if (hasNextPage) fetchNextPage() }}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={isFetchingNextPage ? (
-        <ActivityIndicator className="py-4" />
-      ) : null}
-    />
-  )
-}
-```
-
-4. Image list optimization with `expo-image`:
-```tsx
-import { Image } from 'expo-image'  // NOT from react-native
-
-// expo-image features:
-// - Disk + memory caching
-// - Blurhash placeholder
-// - Progressive loading
-// - Better performance than RN Image
-
-const blurhash = '|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj['
-
-<Image
-  source={post.imageUrl}
-  placeholder={blurhash}
-  contentFit="cover"
-  transition={200}
-  style={{ width: '100%', height: 200, borderRadius: 12 }}
-  cachePolicy="memory-disk"
-/>
 ```
 
 ⚠️ Common Pitfalls:
-- Pitfall: Not setting `estimatedItemSize` on FlashList — causes layout jumps.
-- Solution: Measure your actual average item height and use that value.
-- Pitfall: Creating new functions inside renderItem on each render.
-- Solution: Wrap renderItem in `useCallback` and item components in `React.memo`.
+- Pitfall: `LazyColumn` scrolling drops frames (<60fps).
+- Solution: Missing `key` means Compose destroys and recreates every item on scroll instead of moving them.
+- Pitfall: Passing a `List<T>` to a Composable where `T` is an interface or class from another module not marked `@Stable`.
+- Solution: Compose treats generic `List` as unstable. Wrap it in a stable class or use KotlinX Immutable Collections (`ImmutableList`).
 ```
-
-✅ **Verification Checklist:**
-- [ ] Lists render at 60fps (no dropped frames in React DevTools profiler).
-- [ ] Infinite scroll loads next page smoothly.
-- [ ] Images show blurhash placeholder while loading.
-- [ ] No `ScrollView` with `.map()` patterns in the codebase.
 
 ---
 
-### Prompt M10.2: Re-render Optimization
+### Prompt M10.2: R8 / ProGuard Setup
 
 ```text
-You are a React Native Re-render Optimization Specialist. Eliminate unnecessary re-renders in [AppName].
+You are an Android DevOps Engineer. Configure R8 (ProGuard) to shrink and optimize the app.
 
-Required Output Format: Provide complete code and analysis for:
+Requirements:
+- Enable `isMinifyEnabled` and `isShrinkResources` in `build.gradle.kts`.
+- Provide basic ProGuard rules for common libraries (Retrofit, Coroutines).
 
-1. React.memo for list items:
-```tsx
-// ❌ WRONG — re-renders on every parent render
-function PostCard({ post }: { post: Post }) { ... }
+Required Output Format:
 
-// ✅ CORRECT — only re-renders when post changes
-export const PostCard = React.memo(function PostCard({ post, onPress }: {
-  post: Post
-  onPress: (id: string) => void
-}) {
-  return (
-    <Pressable onPress={() => onPress(post.id)}>
-      ...
-    </Pressable>
-  )
-}, (prev, next) => {
-  // Custom equality — only re-render if these fields change
-  return prev.post.id === next.post.id && prev.post.updatedAt === next.post.updatedAt
-})
-```
-
-2. useMemo for expensive computations:
-```tsx
-// ❌ WRONG — filtered list recalculated on every render
-const filtered = posts.filter((p) => p.category === activeFilter)
-
-// ✅ CORRECT — only recalculates when dependencies change
-const filtered = useMemo(
-  () => posts.filter((p) => p.category === activeFilter),
-  [posts, activeFilter]
-)
-```
-
-3. useCallback for event handlers:
-```tsx
-// ❌ WRONG — new function reference on every render (breaks React.memo)
-<PostCard onPress={(id) => router.push(`/post/${id}`)} />
-
-// ✅ CORRECT — stable function reference
-const handlePress = useCallback((id: string) => {
-  router.push(`/post/${id}`)
-}, [router])
-<PostCard onPress={handlePress} />
-```
-
-4. Zustand selector optimization:
-```tsx
-// ❌ WRONG — re-renders when ANY store property changes
-const { user, isAuthenticated, logout } = useAuthStore()
-
-// ✅ CORRECT — re-renders only when user changes
-const user = useAuthStore((s) => s.user)
-const logout = useAuthStore((s) => s.logout)
-```
-
-5. Profiling with React DevTools:
-```bash
-# Enable profiling in development
-npx react-devtools
-
-# In your app, shake device → Performance Monitor
-# Look for: JS Frame Rate (should be 60fps)
-# Look for: UI Frame Rate (should be 60fps)
-```
-```
-
-✅ **Verification Checklist:**
-- [ ] React DevTools Profiler shows no unnecessary re-renders on scroll.
-- [ ] List item components wrapped in `React.memo`.
-- [ ] All event handlers in list items wrapped in `useCallback`.
-- [ ] Zustand selectors used for all store subscriptions.
-
----
-
-### Prompt M10.3: App Startup Performance
-
-```text
-You are a React Native Startup Performance Engineer. Optimize [AppName]'s cold start time to <3 seconds.
-
-Required Output Format: Provide complete code for:
-
-1. Splash screen management (avoid layout flash):
-```typescript
-import * as SplashScreen from 'expo-splash-screen'
-
-// In app/_layout.tsx — prevent auto-hide
-SplashScreen.preventAutoHideAsync()
-
-export default function RootLayout() {
-  const [appReady, setAppReady] = useState(false)
-
-  useEffect(() => {
-    async function prepare() {
-      try {
-        // Load fonts, check auth, initialize DB
-        await Promise.all([
-          loadFonts(),
-          initializeDatabase(),
-          checkAuthSession(),
-        ])
-      } finally {
-        setAppReady(true)
-        SplashScreen.hideAsync()
-      }
+1. Update `app/build.gradle.kts`:
+```kotlin
+buildTypes {
+    release {
+        isMinifyEnabled = true
+        isShrinkResources = true
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "proguard-rules.pro"
+        )
+        // Optionally configure a custom signing config here
     }
-    prepare()
-  }, [])
-
-  if (!appReady) return null  // Keep splash screen visible
-  return <Stack />
 }
 ```
 
-2. Lazy-load heavy screens:
-```tsx
-import { lazy, Suspense } from 'react'
-
-// Defer loading heavy screens until needed
-const MapScreen = lazy(() => import('@/app/(tabs)/map'))
-const CameraScreen = lazy(() => import('@/app/camera'))
-
-// Usage with Suspense
-<Suspense fallback={<ScreenSkeleton />}>
-  <MapScreen />
-</Suspense>
-```
-
-3. Bundle analysis with `expo-bundle-analyzer`:
-```bash
-# Install and run
-npm install --save-dev expo-bundle-analyzer
-
-# Add to package.json
-"scripts": {
-  "analyze": "EXPO_BUNDLE_ANALYZER=true npx expo export"
+2. Standard `app/proguard-rules.pro`:
+```text
+# Retrofit
+-keepattributes Signature
+-keepattributes Exceptions
+-keepclasseswithmembers class * {
+    @retrofit2.http.* <methods>;
 }
 
-# Run
-npm run analyze
+# Kotlin Serialization
+-keepattributes *Annotation*, InnerClasses
+-keep,allowoptimization class * {
+    @kotlinx.serialization.Serializable *;
+    @kotlinx.serialization.Serializer *;
+}
+
+# Dagger Hilt
+-keep,allowobfuscation,allowshrinking interface dagger.hilt.internal.GeneratedEntryPoint
+```
 ```
 
-4. Hermes engine verification:
-```json
-// app.json — Hermes should be enabled by default in SDK 52+
-{
-  "expo": {
-    "android": { "jsEngine": "hermes" },
-    "ios": { "jsEngine": "hermes" }
-  }
+---
+
+### Prompt M10.3: Baseline Profiles (Cold Start Optimization)
+
+```text
+You are an Android Performance Engineer. Implement Baseline Profiles to pre-compile the app's critical path, reducing cold start times by up to 30%.
+
+Requirements:
+- Use the Macrobenchmark and Baseline Profile Gradle plugin.
+- Create a generator class to trace the main app launch.
+
+Required Output Format: Provide instructions and code:
+
+1. Add the Baseline Profile module using Android Studio:
+   `File -> New -> New Module -> Baseline Profile Generator`
+   
+2. The Generator Code (in the new module):
+```kotlin
+package com.example.benchmark
+
+import androidx.benchmark.macro.junit4.BaselineProfileRule
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.uiautomator.By
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class BaselineProfileGenerator {
+
+    @get:Rule
+    val baselineRule = BaselineProfileRule()
+
+    @Test
+    fun generateProfile() {
+        baselineRule.collect(
+            packageName = "com.example.app",
+            profileBlock = {
+                // 1. Start the app
+                pressHome()
+                startActivityAndWait()
+
+                // 2. Perform critical path actions (e.g., scrolling main list)
+                device.waitForIdle()
+                val list = device.findObject(By.res("main_list"))
+                if (list != null) {
+                    list.setGestureMargin(device.displayWidth / 5)
+                    list.scroll(androidx.test.uiautomator.Direction.DOWN, 1f)
+                }
+            }
+        )
+    }
 }
 ```
 
-5. Image optimization checklist:
-- [ ] All app icon and splash images in correct dimensions
-- [ ] Use `expo-image` with `cachePolicy: "memory-disk"` everywhere
-- [ ] Lazy load images below the fold
-- [ ] Use WebP format for all images (supported by `expo-image`)
+3. Generate the profile:
+   Run the `generateBaselineProfile` Gradle task. The output `baseline-prof.txt` will be automatically placed in `app/src/main/baselineProfiles/`.
 ```
+
+---
 
 ✅ **Verification Checklist:**
-- [ ] Cold start < 3 seconds on a mid-range Android device.
-- [ ] No layout flash between splash and first screen.
-- [ ] Hermes engine enabled in production builds.
-- [ ] JS bundle < 50MB (verify with `expo export --platform android`).
+- [ ] No `LazyColumn` items are missing `key` properties.
+- [ ] Running a Release build (`./gradlew assembleRelease`) successfully completes without missing class crashes (R8 rules are correct).
+- [ ] Baseline Profiles are generated and included in the APK.
 
 ---
 
 📎 **Related Phases:**
-- Prerequisites: [Phase M9: Testing & QA](./MOBILE_PHASE_9_TESTING_QA_QA_Engineer.md)
+- Prerequisites: [Phase M9: Testing](./MOBILE_PHASE_9_TESTING_QA_QA_Engineer.md)
 - Proceeds to: [Phase M11: Push Notifications & Analytics](./MOBILE_PHASE_11_PUSH_NOTIFICATIONS_ANALYTICS_Product_Engineer.md)
