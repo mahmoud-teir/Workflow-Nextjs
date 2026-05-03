@@ -201,7 +201,7 @@ The **Everything Claude Code (ECC)** architecture transforms this prompt library
 | `/build-error-resolver` | [Build Error Resolver](agents/build-error-resolver.md) | Build/type error diagnosis | All |
 | `/e2e-runner` | [E2E Runner](agents/e2e-runner.md) | Playwright test execution | 7 |
 | `/seo-specialist` | [SEO Specialist](agents/seo-specialist.md) | SEO and metadata audit | 14 |
-| `/performance-optimizer` | [Performance Optimizer](agents/performance-optimizer.md) | Core Web Vitals optimization | 10, 14 |
+| `/performance-optimizer` | [Performance Optimizer](agents/performance-optimizer.md) | CWV, bundle size, caching, build times, repo structure | 10, 14 |
 
 ### Skills
 

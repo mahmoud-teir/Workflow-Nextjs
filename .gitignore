@@ -1,1 +1,5 @@
-.qwen/
+# Examples 1 and 2 show that only source/config files were modified, so no .gitignore content is needed
+
+PERFORMANCE_OPTIMIZATION_GUIDE.md
+README.md
+agents/performance-optimizer.md
